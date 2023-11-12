@@ -3,6 +3,7 @@ package com.encrypto.EncryptoServer.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,7 +27,8 @@ public class Users {
     @Column(nullable = false)
     private String password;
 
-    @NotBlank(message = "Email is required")
+    @NotNull(message = "DateOfBirth is required")
     @Column(nullable = false)
+    @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 }
