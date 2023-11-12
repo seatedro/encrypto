@@ -1,7 +1,5 @@
 package com.encrypto.EncryptoServer.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import com.encrypto.EncryptoServer.security.CustomAuthProvider;
 import com.encrypto.EncryptoServer.security.JwtReqFilter;
 import com.encrypto.EncryptoServer.service.CustomUserDetailsService;
@@ -36,18 +34,12 @@ public class SecurityConfiguration {
                                 authorize
                                         .requestMatchers("/api/auth/**")
                                         .permitAll()
-                                        //
-                                        // .requestMatchers("/api/v1/encrypt").permitAll()
-                                        //
-                                        // .requestMatchers("/api/v1/decrypt").permitAll()
-                                        //
-                                        // .requestMatchers("/api/v1/register").permitAll()
                                         .anyRequest()
                                         .authenticated())
                 .authenticationProvider(customAuthenticationProvider)
                 .addFilterBefore(jwtReqFilter, UsernamePasswordAuthenticationFilter.class)
-                .formLogin(withDefaults())
-                .httpBasic(withDefaults())
+                //                .formLogin(withDefaults())
+                //                .httpBasic(withDefaults())
                 .sessionManagement(
                         (session) ->
                                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
