@@ -1,7 +1,11 @@
 package com.encrypto.EncryptoServer.config;
 
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
+import com.encrypto.EncryptoServer.security.CustomAuthProvider;
 import com.encrypto.EncryptoServer.service.CustomUserDetailsService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,13 +20,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
     @Autowired
     private CustomUserDetailsService userDetailsService;
+    @Autowired
+    private CustomAuthProvider customAuthenticationProvider;
 
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -35,6 +39,7 @@ public class SecurityConfiguration {
 //                        .requestMatchers("/api/v1/register").permitAll()
                     .anyRequest().authenticated()
             )
+            .authenticationProvider(customAuthenticationProvider)
             .formLogin(withDefaults())
             .httpBasic(withDefaults())
             .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
