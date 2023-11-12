@@ -1,9 +1,9 @@
 package com.encrypto.EncryptoServer.config;
 
-
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.encrypto.EncryptoServer.security.CustomAuthProvider;
+import com.encrypto.EncryptoServer.security.JwtReqFilter;
 import com.encrypto.EncryptoServer.service.CustomUserDetailsService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,41 +19,50 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-    @Autowired
-    private CustomAuthProvider customAuthenticationProvider;
+    @Autowired private CustomUserDetailsService userDetailsService;
+    @Autowired private CustomAuthProvider customAuthenticationProvider;
+    @Autowired private JwtReqFilter jwtReqFilter;
 
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests((authorize) -> authorize
-                    .requestMatchers("/api/auth/**").permitAll()
-//                        .requestMatchers("/api/v1/encrypt").permitAll()
-//                        .requestMatchers("/api/v1/decrypt").permitAll()
-//                        .requestMatchers("/api/v1/register").permitAll()
-                    .anyRequest().authenticated()
-            )
-            .authenticationProvider(customAuthenticationProvider)
-            .formLogin(withDefaults())
-            .httpBasic(withDefaults())
-            .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(
+                        (authorize) ->
+                                authorize
+                                        .requestMatchers("/api/auth/**")
+                                        .permitAll()
+                                        //
+                                        // .requestMatchers("/api/v1/encrypt").permitAll()
+                                        //
+                                        // .requestMatchers("/api/v1/decrypt").permitAll()
+                                        //
+                                        // .requestMatchers("/api/v1/register").permitAll()
+                                        .anyRequest()
+                                        .authenticated())
+                .authenticationProvider(customAuthenticationProvider)
+                .addFilterBefore(jwtReqFilter, UsernamePasswordAuthenticationFilter.class)
+                .formLogin(withDefaults())
+                .httpBasic(withDefaults())
+                .sessionManagement(
+                        (session) ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.headers((headers) -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
+        http.headers(
+                (headers) -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, PasswordEncoder passwordEncoder) throws Exception {
-        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        builder.
-                userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder);
+    public AuthenticationManager authenticationManager(
+            HttpSecurity http, PasswordEncoder passwordEncoder) throws Exception {
+        AuthenticationManagerBuilder builder =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
+        builder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
 
         return builder.build();
     }
