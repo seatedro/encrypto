@@ -69,7 +69,7 @@ public class AuthenticationController {
                     new LoginResponse(loginReq.getUsername(), "Logged in Successfully"));
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid username or password");
+                    .body("Username/password entered is incorrect or the User does not exist.");
         }
     }
 }

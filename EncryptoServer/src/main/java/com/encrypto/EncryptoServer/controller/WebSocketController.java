@@ -17,7 +17,6 @@ public class WebSocketController {
     @MessageMapping("/send")
     public void sendPrivateMessage(@Payload MessageDTO messageDTO) {
         var message = messageService.sendMessage(messageDTO);
-        messagingTemplate.convertAndSendToUser(
-                messageDTO.getReceiverId().toString(), "/private", message);
+        messagingTemplate.convertAndSendToUser(messageDTO.getReceiverId(), "/private", messageDTO);
     }
 }

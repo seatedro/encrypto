@@ -17,11 +17,11 @@ public class MessageService {
         var message = new Messages();
         var sender =
                 userRepository
-                        .findById(messageDTO.getSenderId())
+                        .findByUsername(messageDTO.getSenderId())
                         .orElseThrow(() -> new IllegalArgumentException("Invalid sender id."));
         var receiver =
                 userRepository
-                        .findById(messageDTO.getReceiverId())
+                        .findByUsername(messageDTO.getReceiverId())
                         .orElseThrow(() -> new IllegalArgumentException("Invalid receiver id."));
         message.setSender(sender);
         message.setReceiver(receiver);
