@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoServer.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
+import static org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED;
 
 import com.encrypto.EncryptoServer.service.CustomUserDetailsService;
 
@@ -13,10 +14,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +31,7 @@ public class SecurityConfiguration {
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(
                         (authorize) ->
                                 authorize
@@ -33,15 +39,14 @@ public class SecurityConfiguration {
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
-                .formLogin(
-                        form ->
-                                form.loginPage("/login")
-                                        .permitAll()
-                                        .defaultSuccessUrl("/api/auth/login", true))
+                //                .formLogin(
+                //                        form ->
+                //                                form.loginPage("/login")
+                //                                        .permitAll()
+                //                                        .defaultSuccessUrl("/api/auth/login",
+                // true))
                 .securityContext(withDefaults())
-                .sessionManagement(
-                        (session) ->
-                                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+                .sessionManagement((session) -> session.sessionCreationPolicy(IF_REQUIRED));
 
         http.headers(
                 (headers) -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
@@ -55,6 +60,18 @@ public class SecurityConfiguration {
         builder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
 
         return builder.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        var configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:8081"));
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
