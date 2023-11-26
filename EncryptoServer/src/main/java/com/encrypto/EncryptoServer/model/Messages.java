@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoServer.model;
 
 import jakarta.persistence.*;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,10 +17,10 @@ public class Messages {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Users sender;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Users receiver;
 
     @Column(nullable = false)

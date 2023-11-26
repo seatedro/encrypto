@@ -1,5 +1,6 @@
 package com.encrypto.EncryptoServer.service;
 
+import com.encrypto.EncryptoServer.model.Users;
 import com.encrypto.EncryptoServer.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +18,16 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) {
-        var users =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(
-                                () ->
-                                        new UsernameNotFoundException(
-                                                "Username: " + username + " not found"));
-
+        var users = findByUsername(username);
         return new User(users.getUsername(), users.getPassword(), new ArrayList<>());
+    }
+
+    public Users findByUsername(String username) {
+        return userRepository
+                .findByUsername(username)
+                .orElseThrow(
+                        () ->
+                                new UsernameNotFoundException(
+                                        "Username: " + username + " not found"));
     }
 }
