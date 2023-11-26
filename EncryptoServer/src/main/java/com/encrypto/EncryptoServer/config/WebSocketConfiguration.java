@@ -1,6 +1,5 @@
 package com.encrypto.EncryptoServer.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -10,7 +9,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
-    @Autowired CustomWebsocketUserHandler customHandler;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -21,6 +19,6 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/encrypto").setHandshakeHandler(customHandler).setAllowedOrigins("*");
+        registry.addEndpoint("/encrypto").setAllowedOrigins("*");
     }
 }
