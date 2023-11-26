@@ -39,12 +39,6 @@ public class SecurityConfiguration {
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
-                //                .formLogin(
-                //                        form ->
-                //                                form.loginPage("/login")
-                //                                        .permitAll()
-                //                                        .defaultSuccessUrl("/api/auth/login",
-                // true))
                 .securityContext(withDefaults())
                 .sessionManagement((session) -> session.sessionCreationPolicy(IF_REQUIRED));
 
