@@ -1,6 +1,9 @@
 package com.encrypto.EncryptoServer.controller;
 
+import static java.util.Base64.getDecoder;
+
 import com.encrypto.EncryptoServer.dto.request.LoginRequest;
+import com.encrypto.EncryptoServer.dto.request.UserRequest;
 import com.encrypto.EncryptoServer.dto.response.LoginResponse;
 import com.encrypto.EncryptoServer.dto.response.RegisterResponse;
 import com.encrypto.EncryptoServer.model.Users;
@@ -37,11 +40,19 @@ public class AuthenticationController {
     @Autowired private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody Users user) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserRequest req) {
         // Log the user request body.
         try {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            var decodedPassword = getDecoder().decode(req.getPassword());
+            var user = new Users();
+
+            user.setUsername(req.getUsername());
+            user.setDateOfBirth(req.getDateOfBirth());
+            user.setPassword(passwordEncoder.encode(new String(decodedPassword)));
+            user.setPublicKey(req.getPublicKey());
+
             userRepository.save(user);
+
             var res = new RegisterResponse(true, "User registered successfully");
             return ResponseEntity.status(HttpStatus.CREATED).body(res);
         } catch (DataIntegrityViolationException ex) {
@@ -57,10 +68,11 @@ public class AuthenticationController {
             HttpServletResponse res) {
         // Log the user request body.
         try {
+            var decodedPassword = getDecoder().decode(loginReq.getPassword());
             var auth =
                     authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(
-                                    loginReq.getUsername(), loginReq.getPassword()));
+                                    loginReq.getUsername(), new String(decodedPassword)));
             var context = strategy.createEmptyContext();
             context.setAuthentication(auth);
             strategy.setContext(context);
