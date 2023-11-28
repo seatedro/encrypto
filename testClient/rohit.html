@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocket Sender</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@stomp/stompjs": "https://ga.jspm.io/npm:@stomp/stompjs@7.0.0/esm6/index.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import { Client } from "@stomp/stompjs";
+
+      async function fetchPublicKey(username) {
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/users/${username}/public_key`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+          if (!response.ok) {
+            throw new Error("Public key retrieval failed");
+          }
+          const publicKey = await response.text();
+          const publicKeyArrayBuffer = Uint8Array.from(atob(publicKey), (c) =>
+            c.charCodeAt(0)
+          ).buffer;
+          return publicKeyArrayBuffer;
+        } catch (error) {
+          console.error("Error fetching public key:", error);
+          return null;
+        }
+      }
+
+      function combineAndEncode(iv, encryptedData) {
+        const combinedData = new Uint8Array(
+          iv.length + encryptedData.byteLength
+        );
+        combinedData.set(new Uint8Array(iv), 0);
+        combinedData.set(new Uint8Array(encryptedData), iv.length);
+
+        return btoa(String.fromCharCode.apply(null, combinedData));
+      }
+
+      async function sendMessage() {
+        const publicKeyBuffer = await fetchPublicKey("alan123");
+        if (publicKeyBuffer) {
+          const aesKey = await deriveSharedSecret(
+            ecdhKeyPair.privateKey,
+            publicKeyBuffer
+          );
+          // Print the AES key to the console
+          const aesKeyBytes = await window.crypto.subtle.exportKey(
+            "raw",
+            aesKey
+          );
+          console.log("AES key bytes:", aesKeyBytes);
+          const { iv, encryptedData } = await encryptMessage(
+            "Hello, this is a secret message!",
+            aesKey
+          );
+          console.log("IV:", iv);
+          console.log("Encrypted data:", encryptedData);
+          console.log("AES key:", aesKey);
+
+          const serializedData = combineAndEncode(iv, encryptedData);
+          const message = {
+            content: serializedData,
+            senderId: "rohitp934",
+            receiverId: "alan123",
+            timestamp: new Date(),
+          };
+          console.log(JSON.stringify(message));
+          senderClient.publish({
+            destination: "/app/send",
+            body: JSON.stringify(message),
+          });
+        } else {
+          console.error("Failed to retrieve receiver public key");
+        }
+      }
+
+      async function generateECDHKeyPair() {
+        return window.crypto.subtle.generateKey(
+          {
+            name: "ECDH",
+            namedCurve: "P-384",
+          },
+          true,
+          ["deriveKey"]
+        );
+      }
+
+      // Encrypt message using AES
+      async function encryptMessage(message, aesKey) {
+        const encoder = new TextEncoder();
+        const encodedMessage = encoder.encode(message);
+
+        const iv = window.crypto.getRandomValues(new Uint8Array(12)); // AES-GCM needs an IV
+
+        const encryptedData = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv: iv },
+          aesKey,
+          encodedMessage
+        );
+
+        return { iv, encryptedData };
+      }
+
+      async function deriveSharedSecret(
+        privateKey,
+        receiverPublicKeyArrayBuffer
+      ) {
+        const receiverPublicKey = await window.crypto.subtle.importKey(
+          "raw",
+          receiverPublicKeyArrayBuffer,
+          { name: "ECDH", namedCurve: "P-384" },
+          false,
+          []
+        );
+        const sharedSecret = await window.crypto.subtle.deriveKey(
+          { name: "ECDH", public: receiverPublicKey },
+          privateKey,
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+        return sharedSecret;
+      }
+
+      const ecdhKeyPair = await generateECDHKeyPair();
+
+      let publicKey = await window.crypto.subtle.exportKey(
+        "raw",
+        ecdhKeyPair.publicKey
+      );
+
+      console.log(publicKey);
+
+      const publicKeyString = btoa(
+        String.fromCharCode(...new Uint8Array(publicKey))
+      );
+
+      // Send request to backend to register and login, and get the token.
+      const register = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: "rohitp934",
+          password: btoa("password"),
+          dateOfBirth: "1999-06-03",
+          publicKey: publicKeyString,
+        }),
+      });
+
+      console.log(register);
+
+      const login = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username: "rohitp934",
+          password: btoa("password"),
+        }),
+      });
+
+      const response = await login.json();
+
+      console.log(login);
+
+      const senderClient = new Client({
+        brokerURL: "ws://localhost:8080/encrypto",
+        debug: function (str) {
+          console.log("Sender: " + str);
+        },
+        onConnect: (frame) => {
+          sendMessage();
+        },
+        // Implement reconnect functionality as needed
+        // reconnectDelay: 5000,
+      });
+
+      senderClient.activate();
+    </script>
+  </head>
+  <body>
+    <h2>WebSocket Sender Client</h2>
+  </body>
+</html>
