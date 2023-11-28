@@ -23,7 +23,11 @@ dependencies {
 
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:32.1.1-jre'
-    implementation files('lib/miglayout-swing-11.2.jar')
+//    implementation files('lib/miglayout-swing-11.2.jar')
+    implementation 'com.miglayout:miglayout-swing:11.2'
+    implementation 'com.formdev:flatlaf:3.2.5'
+    implementation 'org.slf4j:slf4j-reload4j:2.0.9'
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -35,7 +39,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'com.encrypto.EncryptoClient.App'
+    mainClass = 'com.encrypto.EncryptoClient.EncryptoClient'
 }
 
 tasks.named('test') {
