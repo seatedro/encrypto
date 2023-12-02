@@ -1,5 +1,8 @@
 package com.encrypto.EncryptoClient.components;
 
+import com.encrypto.EncryptoClient.elements.PlaceholderPasswordField;
+import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
+
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -25,13 +28,11 @@ public class LoginSignupPanel extends JPanel {
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         add(titleLabel, "align center, span, wrap");
 
-        add(new JLabel("Username:"), "align label");
-        usernameField = new JTextField();
-        add(usernameField, "h 35!, w 300!, wrap");
+        usernameField = new PlaceholderTextField("Username");
+        add(usernameField, "align center, h 35!, w 300!, span");
 
-        add(new JLabel("Password:"), "align label");
-        passwordField = new JPasswordField();
-        add(passwordField, "h 35!, w 300!, wrap");
+        passwordField = new PlaceholderPasswordField("Password");
+        add(passwordField, "align center, h 35!, w 300!, span");
 
         loginButton = new JButton("Login");
         signupButton = new JButton("Signup");
