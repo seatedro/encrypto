@@ -3,7 +3,9 @@ package com.encrypto.EncryptoClient.components;
 import static com.encrypto.EncryptoClient.EncryptoClient.client;
 
 import com.encrypto.EncryptoClient.dto.request.LoginRequest;
+import com.encrypto.EncryptoClient.dto.request.RegisterRequest;
 import com.encrypto.EncryptoClient.dto.response.LoginResponse;
+import com.encrypto.EncryptoClient.dto.response.RegisterResponse;
 import com.encrypto.EncryptoClient.elements.PlaceholderPasswordField;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,6 +22,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Date;
 
 import javax.swing.*;
 import javax.swing.event.AncestorEvent;
@@ -86,9 +89,38 @@ public class LoginSignupPanel extends JPanel {
         var username = usernameField.getText();
         var password = passwordField.getPassword();
         logger.info("Register attempt with username: {}", username);
+        signUp(username, password, new Date(), "publicKey");
     }
 
-    private void signUp(String username, char[] password, )
+    private void signUp(String username, char[] password, Date dateOfBirth, String publicKey) {
+        try {
+            var registerReq =
+                    new RegisterRequest(username, new String(password), dateOfBirth, publicKey);
+            var registerReqJson = objectMapper.writeValueAsString(registerReq);
+            logger.info("Register request: {}", registerReqJson);
+
+            var req =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:8080/api/auth/register"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(registerReqJson))
+                            .build();
+
+            client.sendAsync(req, BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(this::parseRegisterResponse)
+                    .thenAccept(this::handleRegisterResponse)
+                    .exceptionally(
+                            e -> {
+                                logger.error("Error authenticating", e);
+                                showErrorMessage("Register Failed: " + e.getMessage());
+                                return null;
+                            });
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void authenticate(String username, char[] password) {
         try {
             var loginReq = new LoginRequest(username, new String(password));
@@ -144,7 +176,31 @@ public class LoginSignupPanel extends JPanel {
                 });
     }
 
+    private RegisterResponse parseRegisterResponse(String responseBody) {
+        try {
+            return objectMapper.readValue(responseBody, RegisterResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void handleRegisterResponse(RegisterResponse response) {
+        SwingUtilities.invokeLater(
+                () -> {
+                    if (response == null) {
+                        showErrorMessage("Failed to parse server response or communication error.");
+                    } else {
+                        showSuccessMessage(response.getMessage());
+                    }
+                });
+    }
+
     private void showErrorMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showSuccessMessage(String message) {
+        JOptionPane.showMessageDialog(
+                this, message, "Registration Success!", JOptionPane.INFORMATION_MESSAGE);
     }
 }
