@@ -34,6 +34,7 @@ public class LoginSignupPanel extends JPanel {
     private static JPasswordField passwordField;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Runnable onSuccessfulLogin;
+    private final JLabel successMessageLabel;
 
     public LoginSignupPanel(Runnable onSuccessfulLogin) {
         this.onSuccessfulLogin = onSuccessfulLogin;
@@ -49,9 +50,12 @@ public class LoginSignupPanel extends JPanel {
         add(usernameField, "align center, h 35!, w 300!, span");
         add(passwordField, "align center, h 35!, w 300!, span");
 
-        usernameField.getDocument().putProperty("owner", usernameField);
-        passwordField.getDocument().putProperty("owner", passwordField);
-        passwordField.getDocument().putProperty("isPassword", true);
+        successMessageLabel = new JLabel();
+        successMessageLabel.setForeground(
+                new Color(0, 128, 0)); // Example: Green color for success message
+        successMessageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        successMessageLabel.setVisible(false); // Initially invisible
+        add(successMessageLabel, "wrap, span");
 
         var loginButton = new JButton("Login");
         var signupButton = new JButton("Signup");
@@ -76,6 +80,28 @@ public class LoginSignupPanel extends JPanel {
                     @Override
                     public void ancestorMoved(AncestorEvent event) {}
                 });
+    }
+
+    private void animateSuccessMessage(String message) {
+        successMessageLabel.setText(message);
+        successMessageLabel.setVisible(true);
+        var alpha = new float[] {0f}; // Start with fully transparent
+
+        var timer =
+                new Timer(
+                        50,
+                        e -> {
+                            alpha[0] += 0.05f; // Increase opacity
+                            if (alpha[0] > 1f) {
+                                alpha[0] = 1f;
+                                ((Timer) e.getSource()).stop(); // Stop the timer when fully opaque
+                            }
+                            successMessageLabel.setForeground(
+                                    new Color(0, 128, 0, (int) (alpha[0] * 255))); // Apply the new
+                            // transparency
+                        });
+        timer.setRepeats(true);
+        timer.start();
     }
 
     private void login(ActionEvent e) {
@@ -190,17 +216,16 @@ public class LoginSignupPanel extends JPanel {
                     if (response == null) {
                         showErrorMessage("Failed to parse server response or communication error.");
                     } else {
-                        showSuccessMessage(response.getMessage());
+                        if (!response.isSuccess()) {
+                            showErrorMessage(response.getMessage());
+                            return;
+                        }
+                        animateSuccessMessage(response.getMessage());
                     }
                 });
     }
 
     private void showErrorMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
-    }
-
-    private void showSuccessMessage(String message) {
-        JOptionPane.showMessageDialog(
-                this, message, "Registration Success!", JOptionPane.INFORMATION_MESSAGE);
     }
 }
