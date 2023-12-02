@@ -5,6 +5,7 @@ package com.encrypto.EncryptoClient;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
@@ -15,17 +16,29 @@ import org.apache.log4j.BasicConfigurator;
 import org.slf4j.Logger;
 
 import java.awt.*;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.http.HttpClient;
 
 import javax.swing.*;
 
 public class EncryptoClient {
     private static final Logger logger = getLogger(EncryptoClient.class);
+    private JFrame frame;
+    private LoginSignupPanel loginSignupPanel;
+    private ChatPanel chatPanel;
+
+    public static final HttpClient client =
+            HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_2)
+                    .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL))
+                    .build();
 
     public EncryptoClient() {}
 
-    private static void render() {
+    private void render() {
         FlatMacDarkLaf.setup();
-        var frame = new JFrame("Encrypto");
+        frame = new JFrame("Encrypto");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new MigLayout());
 
@@ -37,7 +50,7 @@ public class EncryptoClient {
         }
 
         // Login/Signup
-        var loginSignupPanel = new LoginSignupPanel();
+        loginSignupPanel = new LoginSignupPanel(this::transitionToChatPanel);
         frame.add(loginSignupPanel, "push, grow");
 
         frame.pack();
@@ -45,11 +58,22 @@ public class EncryptoClient {
         frame.setVisible(true);
     }
 
+    public void transitionToChatPanel() {
+        if (chatPanel == null) {
+            chatPanel = new ChatPanel();
+        }
+
+        frame.remove(loginSignupPanel);
+        frame.add(chatPanel, "push, grow");
+        frame.validate();
+        frame.repaint();
+    }
+
     public static void main(String[] args) {
         BasicConfigurator.configure();
         logger.info("Starting Encrypto Client");
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("apple.awt.application.appearance", "system");
-        SwingUtilities.invokeLater(EncryptoClient::render);
+        SwingUtilities.invokeLater(() -> new EncryptoClient().render());
     }
 }
