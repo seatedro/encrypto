@@ -15,7 +15,6 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.log4j.BasicConfigurator;
 import org.slf4j.Logger;
 
-import java.awt.*;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;

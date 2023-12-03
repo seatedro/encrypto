@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoClient.components;
 
 import static com.encrypto.EncryptoClient.EncryptoClient.client;
+import static com.encrypto.EncryptoClient.util.KeyUtils.*;
 
 import com.encrypto.EncryptoClient.dto.request.LoginRequest;
 import com.encrypto.EncryptoClient.dto.request.RegisterRequest;
@@ -115,13 +116,18 @@ public class LoginSignupPanel extends JPanel {
         var username = usernameField.getText();
         var password = passwordField.getPassword();
         logger.info("Register attempt with username: {}", username);
-        signUp(username, password, new Date(), "publicKey");
+        signUp(username, password, new Date());
     }
 
-    private void signUp(String username, char[] password, Date dateOfBirth, String publicKey) {
+    private void signUp(String username, char[] password, Date dateOfBirth) {
         try {
+            logger.info("Creating and saving Diffie-Hellman key pair");
+            var keyPair = generateECDHKeyPair();
+            var publicKeyString = exportPublicKey(keyPair.getPublic());
+            storePrivateKey(keyPair, username, password);
             var registerReq =
-                    new RegisterRequest(username, new String(password), dateOfBirth, publicKey);
+                    new RegisterRequest(
+                            username, new String(password), dateOfBirth, publicKeyString);
             var registerReqJson = objectMapper.writeValueAsString(registerReq);
             logger.info("Register request: {}", registerReqJson);
 
@@ -152,6 +158,8 @@ public class LoginSignupPanel extends JPanel {
             var loginReq = new LoginRequest(username, new String(password));
             var loginReqJson = objectMapper.writeValueAsString(loginReq);
             logger.info("Login request: {}", loginReqJson);
+            logger.info("Loading Diffie-Hellman private key");
+            var privateKey = loadPrivateKey(username, password);
 
             var req =
                     HttpRequest.newBuilder()
@@ -213,6 +221,7 @@ public class LoginSignupPanel extends JPanel {
     private void handleRegisterResponse(RegisterResponse response) {
         SwingUtilities.invokeLater(
                 () -> {
+                    //                    spinner.showCompletedTick();
                     if (response == null) {
                         showErrorMessage("Failed to parse server response or communication error.");
                     } else {
