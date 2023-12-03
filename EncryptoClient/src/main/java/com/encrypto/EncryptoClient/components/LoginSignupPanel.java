@@ -3,6 +3,7 @@ package com.encrypto.EncryptoClient.components;
 import static com.encrypto.EncryptoClient.EncryptoClient.client;
 import static com.encrypto.EncryptoClient.util.KeyUtils.*;
 
+import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.request.LoginRequest;
 import com.encrypto.EncryptoClient.dto.request.RegisterRequest;
 import com.encrypto.EncryptoClient.dto.response.LoginResponse;
@@ -36,9 +37,11 @@ public class LoginSignupPanel extends JPanel {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Runnable onSuccessfulLogin;
     private final JLabel successMessageLabel;
+    private final EncryptoClient parent;
 
-    public LoginSignupPanel(Runnable onSuccessfulLogin) {
-        this.onSuccessfulLogin = onSuccessfulLogin;
+    public LoginSignupPanel(EncryptoClient parent) {
+        this.parent = parent;
+        this.onSuccessfulLogin = parent::transitionToChatPanel;
         setLayout(new MigLayout("insets 30, fill", "", "[]25[]"));
 
         var titleLabel = new JLabel("Sign in to App");
@@ -160,6 +163,7 @@ public class LoginSignupPanel extends JPanel {
             logger.info("Login request: {}", loginReqJson);
             logger.info("Loading Diffie-Hellman private key");
             var privateKey = loadPrivateKey(username, password);
+            parent.setPrivateKey(privateKey);
 
             var req =
                     HttpRequest.newBuilder()

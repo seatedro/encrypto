@@ -10,6 +10,9 @@ import com.encrypto.EncryptoClient.components.LoginSignupPanel;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.BasicConfigurator;
@@ -18,6 +21,7 @@ import org.slf4j.Logger;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;
+import java.security.PrivateKey;
 
 import javax.swing.*;
 
@@ -26,6 +30,7 @@ public class EncryptoClient {
     private JFrame frame;
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
+    @Getter @Setter private PrivateKey privateKey;
 
     public static final HttpClient client =
             HttpClient.newBuilder()
@@ -49,7 +54,7 @@ public class EncryptoClient {
         }
 
         // Login/Signup
-        loginSignupPanel = new LoginSignupPanel(this::transitionToChatPanel);
+        loginSignupPanel = new LoginSignupPanel(this);
         frame.add(loginSignupPanel, "push, grow");
 
         frame.pack();
