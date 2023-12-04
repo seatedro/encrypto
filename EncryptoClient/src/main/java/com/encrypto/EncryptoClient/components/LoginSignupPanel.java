@@ -172,6 +172,7 @@ public class LoginSignupPanel extends JPanel {
                             .POST(HttpRequest.BodyPublishers.ofString(loginReqJson))
                             .build();
 
+            setUser(username);
             client.sendAsync(req, BodyHandlers.ofString())
                     .thenApply(
                             res -> {
@@ -187,6 +188,7 @@ public class LoginSignupPanel extends JPanel {
                             e -> {
                                 logger.error("Error authenticating", e);
                                 showErrorMessage("Login Failed: " + e.getMessage());
+                                clearUser();
                                 return null;
                             });
         } catch (JsonProcessingException e) {
@@ -214,6 +216,14 @@ public class LoginSignupPanel extends JPanel {
 
                     onSuccessfulLogin.run();
                 });
+    }
+
+    private void setUser(String username) {
+        parent.setUsername(username);
+    }
+
+    private void clearUser() {
+        parent.clearUsername();
     }
 
     private void connectToSocket() {

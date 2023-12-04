@@ -1,7 +1,14 @@
 package com.encrypto.EncryptoClient.components;
 
+import com.encrypto.EncryptoClient.EncryptoClient;
+import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
+import com.encrypto.EncryptoClient.service.ChatService;
+import com.encrypto.EncryptoClient.util.StompSessionManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.Getter;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -9,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.net.http.HttpClient;
+import java.util.Arrays;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,13 +31,17 @@ public class ChatPanel extends JPanel {
     private JPanel inputPanel;
     private JButton newChatButton;
     private DefaultListModel<String> chatListModel;
+    @Getter private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ChatService chatService;
 
-    public ChatPanel() {
+    public ChatPanel(StompSessionManager socket, HttpClient client) {
+        chatService = new ChatService(client);
         setLayout(new MigLayout("fill, insets 0", "[grow][grow]", "[grow][shrink 0]"));
         setPreferredSize(new Dimension(1200, 800));
         // Add some gap at the top of the panel.
         setBorder(new EmptyBorder(25, 0, 0, 0));
 
+        populateChats(chatService.fetchAllChats(EncryptoClient.getUsername()));
         render();
     }
 
@@ -189,4 +202,18 @@ public class ChatPanel extends JPanel {
         // Hide the inputPanel
         inputPanel.setVisible(false);
     }
+
+    public void populateChats(GetAllChatsResponse response) {
+        logger.info("Populating chats: {}", Arrays.toString(response.getUsernames()));
+        for (var username : response.getUsernames()) {
+            addNewChat(username);
+            handshake(username);
+        }
+    }
+
+    private void handshake(String username) {
+        fetchPublicKey(username);
+    }
+
+    private void fetchPublicKey(String username) {}
 }

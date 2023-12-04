@@ -1,6 +1,6 @@
 package com.encrypto.EncryptoClient.util;
 
-import com.encrypto.EncryptoClient.dto.request.MessageDTO;
+import com.encrypto.EncryptoClient.dto.MessageDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

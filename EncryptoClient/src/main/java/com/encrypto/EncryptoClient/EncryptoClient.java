@@ -7,6 +7,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
+import com.encrypto.EncryptoClient.dto.UserDTO;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
@@ -23,6 +24,7 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;
 import java.security.PrivateKey;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.*;
 
@@ -33,6 +35,11 @@ public class EncryptoClient {
     private ChatPanel chatPanel;
     @Getter @Setter private PrivateKey privateKey;
     @Getter @Setter private StompSessionManager socket;
+
+    @Getter
+    private static final ConcurrentHashMap<String, UserDTO> chats = new ConcurrentHashMap<>();
+
+    @Getter @Setter private static String username;
 
     public static final HttpClient client =
             HttpClient.newBuilder()
@@ -69,13 +76,17 @@ public class EncryptoClient {
 
     public void transitionToChatPanel() {
         if (chatPanel == null) {
-            chatPanel = new ChatPanel();
+            chatPanel = new ChatPanel(getSocket(), client);
         }
 
         frame.remove(loginSignupPanel);
         frame.add(chatPanel, "push, grow");
         frame.validate();
         frame.repaint();
+    }
+
+    public void clearUsername() {
+        username = null;
     }
 
     public static void main(String[] args) {
