@@ -1,25 +1,30 @@
 package com.encrypto.EncryptoClient.components;
 
+import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
 
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
 
 public class ChatPanel extends JPanel {
-    private JList<JPanel> chatList;
+    private static final Logger logger = LoggerFactory.getLogger(LoginSignupPanel.class);
+    private JList<String> chatList;
     private JPanel chatDisplayArea;
     private JTextField messageInputField;
     private JButton sendMessageButton;
     private JPanel inputPanel;
     private JButton newChatButton;
+    private DefaultListModel<String> chatListModel;
 
     public ChatPanel() {
-        setLayout(new MigLayout("insets 30, fill", "[grow 0][grow]", "[grow][]"));
+        setLayout(new MigLayout("fill, insets 0", "[grow][grow]", "[grow][shrink 0]"));
         setPreferredSize(new Dimension(1200, 800));
         // Add some gap at the top of the panel.
         setBorder(new EmptyBorder(25, 0, 0, 0));
@@ -31,37 +36,55 @@ public class ChatPanel extends JPanel {
         setupSideBar();
         setupChatDisplayArea();
         setupMessageInputArea();
-        //        setupNewChatButton();
     }
 
     private void setupSideBar() {
         chatList = new JList<>();
-        var chatListModel = new DefaultListModel<JPanel>();
+        chatListModel = new DefaultListModel<>();
         chatList.setModel(chatListModel);
         chatList.setCellRenderer(new ChatListCellRenderer());
-
-        addChatEntry(chatListModel, "Test User 1");
-        addChatEntry(chatListModel, "Test User 2");
-
-        var chatScrollPane = new JScrollPane(chatList);
-        chatScrollPane.setBorder(null);
-        add(chatScrollPane, "dock west, spany 2, width 200::200, growy");
-    }
-
-    private void addChatEntry(DefaultListModel<JPanel> model, String username) {
-        var chatButton = new JButton(username);
-        chatButton.setPreferredSize(new Dimension(200, 50));
-        chatButton.setHorizontalAlignment(SwingConstants.LEFT);
-        chatButton.setBorder(new EmptyBorder(10, 10, 10, 10));
-        chatButton.addActionListener(
+        chatList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        chatList.addListSelectionListener(
                 e -> {
-                    // Logic to open chat goes here
+                    if (!e.getValueIsAdjusting()) {
+                        var selectedUser = chatList.getSelectedValue();
+                        updateChatDisplayArea(selectedUser);
+                    }
                 });
 
-        var panel = new JPanel(new MigLayout("fill, insets 0"));
-        panel.add(chatButton, "grow");
-        panel.setBorder(new MatteBorder(0, 0, 1, 0, Color.DARK_GRAY));
-        model.addElement(panel);
+        chatListModel.addElement("Test User 1");
+        chatListModel.addElement("Test User 2");
+
+        var chatScrollPane = new JScrollPane(chatList);
+        var sideBarPanel = new JPanel(new MigLayout("fill, insets 0"));
+        chatScrollPane.setBorder(null);
+        setupNewChatButton();
+        sideBarPanel.add(chatScrollPane, "grow, pushy");
+        sideBarPanel.add(newChatButton, "dock north");
+        add(sideBarPanel, "dock west, spany 2, width 200::200, growy");
+    }
+
+    private void addNewChat(String username) {
+        if (!chatListModel.contains(username)) {
+            chatListModel.addElement(username);
+            chatList.setSelectedValue(username, true);
+            updateChatDisplayArea(username);
+        }
+    }
+
+    private void updateChatDisplayArea(String username) {
+        chatSelected();
+        chatDisplayArea.removeAll();
+        if (username != null) {
+            chatDisplayArea.add(createChatDisplayComponentForUser(username), "grow, push");
+            logger.info("Chat display area updated for user: {}", username);
+        } else {
+            chatDisplayArea.add(
+                    new JLabel("Select a chat to start messaging", SwingConstants.CENTER),
+                    "grow, push");
+        }
+        chatDisplayArea.revalidate();
+        chatDisplayArea.repaint();
     }
 
     private void setupChatDisplayArea() {
@@ -92,26 +115,58 @@ public class ChatPanel extends JPanel {
                 new JButton(new ImageIcon("assets/plus.png")); // Replace with your icon path
         newChatButton.setBorder(BorderFactory.createEmptyBorder());
         newChatButton.setContentAreaFilled(false);
+        newChatButton.setFocusPainted(false);
+        newChatButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Rounded.
+        newChatButton.setBorderPainted(false);
+        newChatButton.setOpaque(false);
+        newChatButton.setPreferredSize(new Dimension(60, 60));
         newChatButton.addActionListener(e -> showNewChatDialog());
-        add(newChatButton, "dock south");
     }
 
     private void showNewChatDialog() {
-        String username = JOptionPane.showInputDialog(this, "Enter username to chat with:");
+        var username = JOptionPane.showInputDialog(this, "Enter username to chat with:");
         if (username != null && !username.trim().isEmpty()) {
-            // Logic to handle the new chat creation goes here
+            addNewChat(username);
         }
     }
 
-    private static class ChatListCellRenderer implements ListCellRenderer<JPanel> {
+    private JScrollPane createChatDisplayComponentForUser(String username) {
+        // Create a panel to hold the chat messages
+        var chatDisplayComponent = new JPanel(new MigLayout("fillx, insets 0, wrap 1"));
+        chatDisplayComponent.setBorder(new EmptyBorder(0, 10, 10, 10));
+        //        chatDisplayComponent.setBackground(Color.); // Dark theme background
+
+        // Add a sample label, or you can add the actual chat messages here
+        for (var i = 0; i < 15; i++) {
+            var msg = "This is a sample message " + i;
+            var bubble = new MessageBubble(msg);
+            chatDisplayComponent.add(bubble, "wrap, wmin 10, top, gapbottom" + 10);
+            chatDisplayComponent.revalidate();
+            chatDisplayComponent.repaint();
+            // Align left for received messages, align right for sent messages
+        }
+        // Add more UI components to chatDisplayComponent as needed for the chat UI
+
+        return new JScrollPane(chatDisplayComponent);
+    }
+
+    private static class ChatListCellRenderer implements ListCellRenderer<String> {
         @Override
         public Component getListCellRendererComponent(
-                JList<? extends JPanel> list,
-                JPanel value,
+                JList<? extends String> list,
+                String username,
                 int index,
                 boolean isSelected,
                 boolean cellHasFocus) {
-            return value;
+            var chatCellPanel = new JPanel(new MigLayout("fill, insets 10"));
+            if (isSelected) {
+                chatCellPanel.setBackground(Color.DARK_GRAY);
+            }
+            var usernameLabel = new JLabel(username);
+            chatCellPanel.add(usernameLabel);
+            return chatCellPanel;
         }
     }
 
