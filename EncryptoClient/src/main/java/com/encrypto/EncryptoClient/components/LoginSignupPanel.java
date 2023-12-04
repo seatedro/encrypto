@@ -10,6 +10,7 @@ import com.encrypto.EncryptoClient.dto.response.LoginResponse;
 import com.encrypto.EncryptoClient.dto.response.RegisterResponse;
 import com.encrypto.EncryptoClient.elements.PlaceholderPasswordField;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
+import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -101,8 +102,7 @@ public class LoginSignupPanel extends JPanel {
                                 ((Timer) e.getSource()).stop(); // Stop the timer when fully opaque
                             }
                             successMessageLabel.setForeground(
-                                    new Color(0, 128, 0, (int) (alpha[0] * 255))); // Apply the new
-                            // transparency
+                                    new Color(0, 128, 0, (int) (alpha[0] * 255)));
                         });
         timer.setRepeats(true);
         timer.start();
@@ -210,8 +210,16 @@ public class LoginSignupPanel extends JPanel {
                         return;
                     }
 
+                    connectToSocket();
+
                     onSuccessfulLogin.run();
                 });
+    }
+
+    private void connectToSocket() {
+        var socket = new StompSessionManager(client);
+        socket.connect();
+        parent.setSocket(socket);
     }
 
     private RegisterResponse parseRegisterResponse(String responseBody) {

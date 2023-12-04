@@ -7,6 +7,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
+import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 
@@ -31,6 +32,7 @@ public class EncryptoClient {
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
     @Getter @Setter private PrivateKey privateKey;
+    @Getter @Setter private StompSessionManager socket;
 
     public static final HttpClient client =
             HttpClient.newBuilder()
@@ -55,10 +57,10 @@ public class EncryptoClient {
         }
 
         // Login/Signup
-        //        loginSignupPanel = new LoginSignupPanel(this);
-        //        frame.add(loginSignupPanel, "push, grow");
-        chatPanel = new ChatPanel();
-        frame.add(chatPanel, "push, grow");
+        loginSignupPanel = new LoginSignupPanel(this);
+        frame.add(loginSignupPanel, "push, grow");
+        //        chatPanel = new ChatPanel();
+        //        frame.add(chatPanel, "push, grow");
 
         frame.pack();
         frame.setLocationRelativeTo(null);

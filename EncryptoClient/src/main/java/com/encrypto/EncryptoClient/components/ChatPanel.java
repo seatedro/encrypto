@@ -14,7 +14,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 public class ChatPanel extends JPanel {
-    private static final Logger logger = LoggerFactory.getLogger(LoginSignupPanel.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChatPanel.class);
     private JList<String> chatList;
     private JPanel chatDisplayArea;
     private JTextField messageInputField;
