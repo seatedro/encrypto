@@ -30,4 +30,5 @@ public class CustomUserDetailsService implements UserDetailsService {
                                 new UsernameNotFoundException(
                                         "Username: " + username + " not found"));
     }
+
 }
