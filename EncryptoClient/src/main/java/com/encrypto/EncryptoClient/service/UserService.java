@@ -1,7 +1,6 @@
 package com.encrypto.EncryptoClient.service;
 
-import com.encrypto.EncryptoClient.dto.request.GetAllChatsRequest;
-import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
+import com.encrypto.EncryptoClient.dto.response.GetPublicKeyResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -21,5 +20,37 @@ public class UserService {
 
     public UserService(HttpClient httpClient) {
         this.client = httpClient;
+    }
+
+    public GetPublicKeyResponse getPublicKey(String username) {
+        try {
+            var uri = String.format("http://localhost:8080/api/users/%s/public_key", username);
+            var req =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(uri))
+                            .header("Content-Type", "application/json")
+                            .GET()
+                            .build();
+            return client.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(this::parseGetPublicKeyResponse)
+                    .exceptionally(
+                            e -> {
+                                logger.error("Error fetching public key", e);
+                                return null;
+                            })
+                    .get();
+
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private GetPublicKeyResponse parseGetPublicKeyResponse(String responseBody) {
+        try {
+            return objectMapper.readValue(responseBody, GetPublicKeyResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

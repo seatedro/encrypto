@@ -5,6 +5,7 @@ import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
 import com.encrypto.EncryptoClient.service.ChatService;
+import com.encrypto.EncryptoClient.service.UserService;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,9 +34,11 @@ public class ChatPanel extends JPanel {
     private DefaultListModel<String> chatListModel;
     @Getter private final ObjectMapper objectMapper = new ObjectMapper();
     private final ChatService chatService;
+    private final UserService userService;
 
     public ChatPanel(StompSessionManager socket, HttpClient client) {
         chatService = new ChatService(client);
+        userService = new UserService(client);
         setLayout(new MigLayout("fill, insets 0", "[grow][grow]", "[grow][shrink 0]"));
         setPreferredSize(new Dimension(1200, 800));
         // Add some gap at the top of the panel.
@@ -212,8 +215,14 @@ public class ChatPanel extends JPanel {
     }
 
     private void handshake(String username) {
-        fetchPublicKey(username);
+        if (EncryptoClient.getChats().get(username).getPublicKey().isEmpty()) {
+            fetchPublicKey(username);
+        }
     }
 
-    private void fetchPublicKey(String username) {}
+    private void fetchPublicKey(String username) {
+        var publicKey = userService.getPublicKey(username).getPublicKey();
+        logger.info("Fetched public key for {}: {}", username, publicKey);
+        EncryptoClient.getChats().get(username).setPublicKey(publicKey);
+    }
 }
