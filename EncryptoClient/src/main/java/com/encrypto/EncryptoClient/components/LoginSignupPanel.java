@@ -219,7 +219,7 @@ public class LoginSignupPanel extends JPanel {
     }
 
     private void setUser(String username) {
-        parent.setUsername(username);
+        EncryptoClient.setUsername(username);
     }
 
     private void clearUser() {
@@ -229,7 +229,7 @@ public class LoginSignupPanel extends JPanel {
     private void connectToSocket() {
         var socket = new StompSessionManager(client);
         socket.connect();
-        parent.setSocket(socket);
+        EncryptoClient.setSocket(socket);
     }
 
     private RegisterResponse parseRegisterResponse(String responseBody) {

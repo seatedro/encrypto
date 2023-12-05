@@ -7,7 +7,9 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
+import com.encrypto.EncryptoClient.dto.MessageDTO;
 import com.encrypto.EncryptoClient.dto.UserDTO;
+import com.encrypto.EncryptoClient.dto.UserWithMessagesDTO;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
@@ -18,12 +20,15 @@ import lombok.Setter;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.BasicConfigurator;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;
 import java.security.PrivateKey;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.*;
@@ -34,10 +39,11 @@ public class EncryptoClient {
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
     @Getter @Setter private PrivateKey privateKey;
-    @Getter @Setter private StompSessionManager socket;
+    @Getter @Setter private static StompSessionManager socket;
 
     @Getter
-    private static final ConcurrentHashMap<String, UserDTO> chats = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, UserWithMessagesDTO> chats =
+            new ConcurrentHashMap<>();
 
     @Getter @Setter private static String username;
 
@@ -47,7 +53,35 @@ public class EncryptoClient {
                     .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL))
                     .build();
 
-    public EncryptoClient() {}
+    public EncryptoClient() {
+        // Add sample data and messages to chats
+        chats.put(
+                "alan",
+                new UserWithMessagesDTO(
+                        new UserDTO("alan", "..."),
+                        new ArrayList<>() {
+                            {
+                                add(
+                                        new MessageDTO(
+                                                "rohitp934",
+                                                "alan",
+                                                "Hello, world!",
+                                                Instant.now()));
+                                add(
+                                        new MessageDTO(
+                                                "alan",
+                                                "rohitp934",
+                                                "How are you?",
+                                                Instant.now()));
+                                add(
+                                        new MessageDTO(
+                                                "alan",
+                                                "rohitp934",
+                                                "I'm doing well btw!",
+                                                Instant.now()));
+                            }
+                        }));
+    }
 
     private void render() {
         FlatMacDarkLaf.setup();

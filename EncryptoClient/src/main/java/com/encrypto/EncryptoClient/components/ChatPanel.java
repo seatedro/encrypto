@@ -1,7 +1,11 @@
 package com.encrypto.EncryptoClient.components;
 
+import static java.lang.String.format;
+
 import com.encrypto.EncryptoClient.EncryptoClient;
+import com.encrypto.EncryptoClient.dto.MessageDTO;
 import com.encrypto.EncryptoClient.dto.UserDTO;
+import com.encrypto.EncryptoClient.dto.UserWithMessagesDTO;
 import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceHolderTextArea;
@@ -11,16 +15,21 @@ import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.lang.reflect.Type;
 import java.net.http.HttpClient;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.swing.*;
@@ -38,8 +47,11 @@ public class ChatPanel extends JPanel {
     @Getter private final ObjectMapper objectMapper = new ObjectMapper();
     private final ChatService chatService;
     private final UserService userService;
+    @Getter @Setter private StompSessionManager socket;
+    private static JPanel chatDisplayComponent;
 
     public ChatPanel(StompSessionManager socket, HttpClient client) {
+        setSocket(socket);
         chatService = new ChatService(client);
         userService = new UserService(client);
         setLayout(new MigLayout("fill, insets 0", "[grow][grow]", "[grow][shrink 0]"));
@@ -48,6 +60,7 @@ public class ChatPanel extends JPanel {
         setBorder(new EmptyBorder(25, 0, 0, 0));
 
         populateChats(chatService.fetchAllChats(EncryptoClient.getUsername()));
+        startListening();
         render();
     }
 
@@ -71,8 +84,11 @@ public class ChatPanel extends JPanel {
                     }
                 });
 
-        chatListModel.addElement("Test User 1");
-        chatListModel.addElement("Test User 2");
+        //        chatListModel.addElement("Test User 1");
+        //        chatListModel.addElement("Test User 2");
+        for (var username : EncryptoClient.getChats().keySet()) {
+            chatListModel.addElement(username);
+        }
 
         var chatScrollPane = new JScrollPane(chatList);
         var sideBarPanel = new JPanel(new MigLayout("fill, insets 0"));
@@ -184,22 +200,31 @@ public class ChatPanel extends JPanel {
 
     private JScrollPane createChatDisplayComponentForUser(String username) {
         // Create a panel to hold the chat messages
-        var chatDisplayComponent = new JPanel(new MigLayout("fillx, insets 0, wrap 1"));
+        chatDisplayComponent = new JPanel(new MigLayout("fillx, insets 0, wrap 1"));
         chatDisplayComponent.setBorder(new EmptyBorder(0, 10, 10, 10));
-        //        chatDisplayComponent.setBackground(Color.); // Dark theme background
 
+        var messages = EncryptoClient.getChats().get(username).getMessages();
         // Add a sample label, or you can add the actual chat messages here
-        for (var i = 0; i < 15; i++) {
-            var msg = "This is a sample message " + i;
-            var bubble = new MessageBubble(msg);
-            chatDisplayComponent.add(bubble, "wrap, wmin 10, top, gapbottom" + 10);
-            chatDisplayComponent.revalidate();
-            chatDisplayComponent.repaint();
+        for (var msgObject : messages) {
+            var msg = msgObject.getContent();
+            var received = msgObject.getSenderId().equals(username);
+            addMessageToChat(msg, received);
             // Align left for received messages, align right for sent messages
         }
         // Add more UI components to chatDisplayComponent as needed for the chat UI
 
         return new JScrollPane(chatDisplayComponent);
+    }
+
+    private static void addMessageToChat(String msg, boolean received) {
+        var bubble = new MessageBubble(msg);
+        // Align left for received messages, align right for sent messages
+        var alignment = received ? "left" : "right";
+
+        chatDisplayComponent.add(
+                bubble, format("wrap, wmin 10, top, gapbottom 10, align %s", alignment));
+        chatDisplayComponent.revalidate();
+        chatDisplayComponent.repaint();
     }
 
     private static class ChatListCellRenderer implements ListCellRenderer<String> {
@@ -251,7 +276,7 @@ public class ChatPanel extends JPanel {
 
     private boolean handshake(String username) {
         var chat = EncryptoClient.getChats().get(username);
-        if (chat == null || chat.getPublicKey().isEmpty()) {
+        if (chat == null || chat.getUser() == null || chat.getUser().getPublicKey().isEmpty()) {
             return fetchPublicKey(username);
         }
         return false;
@@ -266,10 +291,48 @@ public class ChatPanel extends JPanel {
         var publicKey = publicKeyResponse.getPublicKey();
         logger.info("Fetched public key for {}: {}", username, publicKey);
         if (!EncryptoClient.getChats().containsKey(username)) {
-            EncryptoClient.getChats().put(username, new UserDTO(username, ""));
+            EncryptoClient.getChats()
+                    .put(
+                            username,
+                            new UserWithMessagesDTO(new UserDTO(username, ""), new ArrayList<>()));
         }
-        EncryptoClient.getChats().get(username).setPublicKey(publicKey);
+        EncryptoClient.getChats().get(username).getUser().setPublicKey(publicKey);
         return true;
+    }
+
+    private void startListening() {
+        socket.subscribe(
+                format("/user/%s/private", EncryptoClient.getUsername()),
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return MessageDTO.class;
+                    }
+
+                    @Override
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        var message = (MessageDTO) payload;
+                        logger.info("Received message: {}", message);
+                        addMessageToUser(message);
+                    }
+                });
+    }
+
+    private void addMessageToUser(MessageDTO message) {
+        var senderId = message.getSenderId();
+        var receiverId = message.getReceiverId();
+        var content = message.getContent();
+        var timestamp = message.getTimestamp();
+        var chat = EncryptoClient.getChats().get(senderId);
+        if (chat == null) {
+            logger.error("Chat not found for {}", senderId);
+            return;
+        }
+        var messages = chat.getMessages();
+        messages.add(new MessageDTO(senderId, receiverId, content, timestamp));
+        if (chatList.getSelectedValue().equals(senderId)) {
+            addMessageToChat(content, true);
+        }
     }
 
     private void sendMessage(String message) {
