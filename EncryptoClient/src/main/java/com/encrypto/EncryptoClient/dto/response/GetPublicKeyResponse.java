@@ -5,4 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public record GetPublicKeyResponse(String publicKey) {}
+public class GetPublicKeyResponse {
+    private String publicKey;
+}

@@ -6,12 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.ExecutionException;
 
 public class UserService {
     private final HttpClient client;
@@ -31,17 +32,12 @@ public class UserService {
                             .header("Content-Type", "application/json")
                             .GET()
                             .build();
-            return client.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body)
-                    .thenApply(this::parseGetPublicKeyResponse)
-                    .exceptionally(
-                            e -> {
-                                logger.error("Error fetching public key", e);
-                                return null;
-                            })
-                    .get();
-
-        } catch (InterruptedException | ExecutionException e) {
+            var res = client.send(req, HttpResponse.BodyHandlers.ofString());
+            if (HttpStatus.valueOf(res.statusCode()).is2xxSuccessful()) {
+                return parseGetPublicKeyResponse(res.body());
+            }
+            return null;
+        } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoClient.components;
 
 import com.encrypto.EncryptoClient.EncryptoClient;
+import com.encrypto.EncryptoClient.dto.UserDTO;
 import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
@@ -82,9 +83,11 @@ public class ChatPanel extends JPanel {
 
     private void addNewChat(String username) {
         if (!chatListModel.contains(username)) {
-            chatListModel.addElement(username);
-            chatList.setSelectedValue(username, true);
-            updateChatDisplayArea(username);
+            if (handshake(username)) {
+                chatListModel.addElement(username);
+                chatList.setSelectedValue(username, true);
+                updateChatDisplayArea(username);
+            }
         }
     }
 
@@ -209,20 +212,32 @@ public class ChatPanel extends JPanel {
     public void populateChats(GetAllChatsResponse response) {
         logger.info("Populating chats: {}", Arrays.toString(response.getUsernames()));
         for (var username : response.getUsernames()) {
-            addNewChat(username);
-            handshake(username);
+            if (handshake(username)) {
+                addNewChat(username);
+            }
         }
     }
 
-    private void handshake(String username) {
-        if (EncryptoClient.getChats().get(username).getPublicKey().isEmpty()) {
-            fetchPublicKey(username);
+    private boolean handshake(String username) {
+        var chat = EncryptoClient.getChats().get(username);
+        if (chat == null || chat.getPublicKey().isEmpty()) {
+            return fetchPublicKey(username);
         }
+        return false;
     }
 
-    private void fetchPublicKey(String username) {
-        var publicKey = userService.getPublicKey(username).getPublicKey();
+    private boolean fetchPublicKey(String username) {
+        var publicKeyResponse = userService.getPublicKey(username);
+        if (publicKeyResponse == null) {
+            logger.error("Failed to fetch public key for {}", username);
+            return false;
+        }
+        var publicKey = publicKeyResponse.getPublicKey();
         logger.info("Fetched public key for {}: {}", username, publicKey);
+        if (!EncryptoClient.getChats().containsKey(username)) {
+            EncryptoClient.getChats().put(username, new UserDTO(username, ""));
+        }
         EncryptoClient.getChats().get(username).setPublicKey(publicKey);
+        return true;
     }
 }
