@@ -32,7 +32,7 @@
           if (!response.ok) {
             throw new Error("Public key retrieval failed");
           }
-          const publicKey = await response.text();
+          const publicKey = (await response.json()).publicKey;
           const publicKeyArrayBuffer = Uint8Array.from(atob(publicKey), (c) =>
             c.charCodeAt(0)
           ).buffer;
