@@ -69,6 +69,7 @@ public class AuthenticationController {
         // Log the user request body.
         try {
             var decodedPassword = getDecoder().decode(loginReq.getPassword());
+            System.out.println("decodedPassword: " + new String(decodedPassword));
             var auth =
                     authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(

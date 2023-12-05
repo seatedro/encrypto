@@ -1,3 +1,9 @@
 package com.encrypto.EncryptoServer.dto.response;
 
-public record GetPublicKeyResponse(String publicKey) {}
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public class GetPublicKeyResponse {
+    boolean success;
+    String publicKey;
+}
