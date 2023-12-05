@@ -20,9 +20,9 @@ import lombok.Setter;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.BasicConfigurator;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 
+import java.awt.*;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;
@@ -114,7 +114,11 @@ public class EncryptoClient {
 
         frame.remove(loginSignupPanel);
         frame.add(chatPanel, "push, grow");
-        frame.setSize(1200, 800);
+        var gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        var screenSize = frame.getToolkit().getScreenSize();
+        var screenInsets = frame.getToolkit().getScreenInsets(gd.getDefaultConfiguration());
+        frame.setSize(screenSize.width, screenSize.height);
+        frame.setLocation(screenInsets.left, screenInsets.top);
         frame.validate();
         frame.repaint();
     }
