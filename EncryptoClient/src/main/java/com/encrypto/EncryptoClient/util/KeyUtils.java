@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoClient.util;
 
 import static java.lang.System.arraycopy;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -12,7 +13,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
@@ -188,7 +188,7 @@ public class KeyUtils {
             new SecureRandom().nextBytes(iv);
             var gcmParameterSpec = new GCMParameterSpec(128, iv);
             cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmParameterSpec);
-            var encryptedData = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+            var encryptedData = cipher.doFinal(message.getBytes(UTF_8));
             return combineAndEncode(iv, encryptedData);
         } catch (NoSuchAlgorithmException
                 | NoSuchPaddingException
@@ -205,5 +205,31 @@ public class KeyUtils {
         arraycopy(iv, 0, combinedData, 0, iv.length);
         arraycopy(encryptedData, 0, combinedData, iv.length, encryptedData.length);
         return Base64.getEncoder().encode(combinedData);
+    }
+
+    private String decryptMessage(String serializedData, SecretKey aesKey) {
+        var decodedData = Base64.getDecoder().decode(serializedData);
+
+        // Extract IV and encrypted data
+        var iv = new byte[12];
+        arraycopy(decodedData, 0, iv, 0, iv.length);
+        var encryptedData = new byte[decodedData.length - iv.length];
+        arraycopy(decodedData, iv.length, encryptedData, 0, encryptedData.length);
+
+        // Decrypt the data
+        try {
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            var gcmParameterSpec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, aesKey, gcmParameterSpec);
+            var decryptedData = cipher.doFinal(encryptedData);
+            return new String(decryptedData, UTF_8);
+        } catch (NoSuchAlgorithmException
+                | NoSuchPaddingException
+                | InvalidKeyException
+                | InvalidAlgorithmParameterException
+                | IllegalBlockSizeException
+                | BadPaddingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
