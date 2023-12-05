@@ -4,7 +4,7 @@ import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.UserDTO;
 import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.encrypto.EncryptoClient.elements.MessageBubble;
-import com.encrypto.EncryptoClient.elements.PlaceholderTextField;
+import com.encrypto.EncryptoClient.elements.PlaceHolderTextArea;
 import com.encrypto.EncryptoClient.service.ChatService;
 import com.encrypto.EncryptoClient.service.UserService;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.net.http.HttpClient;
 import java.util.Arrays;
 
@@ -28,7 +30,7 @@ public class ChatPanel extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(ChatPanel.class);
     private JList<String> chatList;
     private JPanel chatDisplayArea;
-    private JTextField messageInputField;
+    private PlaceHolderTextArea messageInputField;
     private JButton sendMessageButton;
     private JPanel inputPanel;
     private JButton newChatButton;
@@ -117,13 +119,42 @@ public class ChatPanel extends JPanel {
     }
 
     private void setupMessageInputArea() {
-        messageInputField = new PlaceholderTextField("Type a message...");
+        messageInputField = new PlaceHolderTextArea("Type a message...");
         sendMessageButton = new JButton(new ImageIcon("assets/send.png"));
         sendMessageButton.setBorder(BorderFactory.createEmptyBorder());
         sendMessageButton.setContentAreaFilled(false);
-
         inputPanel = new JPanel(new MigLayout("insets 0 25 0 0"));
-        inputPanel.add(messageInputField, "pushx, growx");
+        messageInputField.setLineWrap(true);
+        messageInputField.setWrapStyleWord(true);
+
+        sendMessageButton.addActionListener(
+                e -> {
+                    var message = messageInputField.getText();
+                    if (!message.isEmpty()) {
+                        sendMessage(message);
+                        messageInputField.setText("");
+                    }
+                });
+        messageInputField.addKeyListener(
+                new KeyAdapter() {
+                    public void keyPressed(KeyEvent e) {
+                        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                            // Enter pressed
+                            e.consume(); // Prevent newline.
+                            var message = messageInputField.getText();
+                            if (!message.isEmpty()) {
+                                sendMessage(message);
+                                messageInputField.setText("");
+                            }
+                        }
+                    }
+                });
+
+        var messageInputScrollPane = new JScrollPane(messageInputField);
+        messageInputScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        messageInputScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        inputPanel.add(messageInputScrollPane, "pushx, growx");
         inputPanel.add(sendMessageButton, "width 80!, height 30!");
         inputPanel.setVisible(false);
         add(inputPanel, "dock south");
@@ -239,5 +270,17 @@ public class ChatPanel extends JPanel {
         }
         EncryptoClient.getChats().get(username).setPublicKey(publicKey);
         return true;
+    }
+
+    private void sendMessage(String message) {
+        try {
+            var selectedUser = chatList.getSelectedValue();
+            //            var chat = EncryptoClient.getChats().get(selectedUser);
+            //            var encryptedMessage = chatService.encryptMessage(message,
+            // chat.getPublicKey());
+            logger.info("Sending message to {}: {}", selectedUser, message);
+        } catch (Exception e) {
+            logger.error("Error sending message", e);
+        }
     }
 }

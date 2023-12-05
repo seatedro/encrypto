@@ -52,7 +52,7 @@ public class EncryptoClient {
     private void render() {
         FlatMacDarkLaf.setup();
         frame = new JFrame("Encrypto");
-        frame.setSize(1200, 800);
+        frame.setSize(450, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new MigLayout());
 
@@ -66,10 +66,9 @@ public class EncryptoClient {
         // Login/Signup
         loginSignupPanel = new LoginSignupPanel(this);
         frame.add(loginSignupPanel, "push, grow");
-        //        chatPanel = new ChatPanel();
-        //        frame.add(chatPanel, "push, grow");
+        //                chatPanel = new ChatPanel();
+        //                frame.add(chatPanel, "push, grow");
 
-        frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
@@ -81,6 +80,7 @@ public class EncryptoClient {
 
         frame.remove(loginSignupPanel);
         frame.add(chatPanel, "push, grow");
+        frame.setSize(1200, 800);
         frame.validate();
         frame.repaint();
     }
