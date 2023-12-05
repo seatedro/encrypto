@@ -1,5 +1,7 @@
 package com.encrypto.EncryptoClient.util;
 
+import static java.lang.System.arraycopy;
+
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -10,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
@@ -21,6 +24,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.Date;
 
+import javax.crypto.*;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
 public class KeyUtils {
@@ -44,6 +50,18 @@ public class KeyUtils {
             var x509EncodedKeySpec =
                     keyFactory.getKeySpec(publicKey, java.security.spec.X509EncodedKeySpec.class);
             return Base64.getEncoder().encodeToString(x509EncodedKeySpec.getEncoded());
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static PublicKey importPublicKey(String publicKeyString) {
+        try {
+            var keyFactory = KeyFactory.getInstance("EC");
+            var x509EncodedKeySpec =
+                    new java.security.spec.X509EncodedKeySpec(
+                            Base64.getDecoder().decode(publicKeyString));
+            return keyFactory.generatePublic(x509EncodedKeySpec);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         }
@@ -149,5 +167,43 @@ public class KeyUtils {
     private static Path getKeyStorePath() {
         var userHome = System.getProperty("user.home");
         return Paths.get(userHome, KEYSTORE_SUBDIR, KEYSTORE_FILENAME);
+    }
+
+    private SecretKey deriveSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
+        try {
+            var keyAgreement = KeyAgreement.getInstance("ECDH");
+            keyAgreement.init(privateKey);
+            keyAgreement.doPhase(publicKey, true);
+            var secret = keyAgreement.generateSecret();
+            return new SecretKeySpec(secret, 0, 16, "AES");
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private byte[] encryptMessage(String message, SecretKey aesKey) {
+        try {
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            var iv = new byte[12];
+            new SecureRandom().nextBytes(iv);
+            var gcmParameterSpec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmParameterSpec);
+            var encryptedData = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+            return combineAndEncode(iv, encryptedData);
+        } catch (NoSuchAlgorithmException
+                | NoSuchPaddingException
+                | InvalidKeyException
+                | InvalidAlgorithmParameterException
+                | IllegalBlockSizeException
+                | BadPaddingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private byte[] combineAndEncode(byte[] iv, byte[] encryptedData) {
+        var combinedData = new byte[iv.length + encryptedData.length];
+        arraycopy(iv, 0, combinedData, 0, iv.length);
+        arraycopy(encryptedData, 0, combinedData, iv.length, encryptedData.length);
+        return Base64.getEncoder().encode(combinedData);
     }
 }
