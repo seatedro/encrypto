@@ -11,6 +11,7 @@ import com.encrypto.EncryptoClient.elements.MessageBubble;
 import com.encrypto.EncryptoClient.elements.PlaceHolderTextArea;
 import com.encrypto.EncryptoClient.service.ChatService;
 import com.encrypto.EncryptoClient.service.UserService;
+import com.encrypto.EncryptoClient.util.KeyUtils;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -29,9 +30,12 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Type;
 import java.net.http.HttpClient;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 
+import javax.crypto.SecretKey;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -84,8 +88,6 @@ public class ChatPanel extends JPanel {
                     }
                 });
 
-        //        chatListModel.addElement("Test User 1");
-        //        chatListModel.addElement("Test User 2");
         for (var username : EncryptoClient.getChats().keySet()) {
             chatListModel.addElement(username);
         }
@@ -294,7 +296,8 @@ public class ChatPanel extends JPanel {
             EncryptoClient.getChats()
                     .put(
                             username,
-                            new UserWithMessagesDTO(new UserDTO(username, ""), new ArrayList<>()));
+                            new UserWithMessagesDTO(
+                                    new UserDTO(username, ""), null, new ArrayList<>()));
         }
         EncryptoClient.getChats().get(username).getUser().setPublicKey(publicKey);
         return true;
@@ -338,10 +341,26 @@ public class ChatPanel extends JPanel {
     private void sendMessage(String message) {
         try {
             var selectedUser = chatList.getSelectedValue();
-            //            var chat = EncryptoClient.getChats().get(selectedUser);
-            //            var encryptedMessage = chatService.encryptMessage(message,
-            // chat.getPublicKey());
+            var chat = EncryptoClient.getChats().get(selectedUser);
+            var user = chat.getUser();
+            var publicKey = KeyUtils.importPublicKey(user.getPublicKey());
+            var privateKey = EncryptoClient.getPrivateKey();
+            SecretKey secretKey;
+            if (chat.getSecretKey() != null) {
+                secretKey = chat.getSecretKey();
+            } else {
+                secretKey = KeyUtils.deriveSharedSecret(privateKey, publicKey);
+                chat.setSecretKey(secretKey);
+            }
+            var encryptedMessage = KeyUtils.encryptMessage(message, secretKey);
+            var encryptedMessageString = Base64.getEncoder().encodeToString(encryptedMessage);
             logger.info("Sending message to {}: {}", selectedUser, message);
+            var socket = getSocket();
+            socket.sendMessage(
+                    EncryptoClient.getUsername(),
+                    selectedUser,
+                    encryptedMessageString,
+                    Instant.now());
         } catch (Exception e) {
             logger.error("Error sending message", e);
         }

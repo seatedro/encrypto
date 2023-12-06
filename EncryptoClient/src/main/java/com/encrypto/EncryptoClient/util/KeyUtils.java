@@ -169,7 +169,7 @@ public class KeyUtils {
         return Paths.get(userHome, KEYSTORE_SUBDIR, KEYSTORE_FILENAME);
     }
 
-    private SecretKey deriveSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
+    public static SecretKey deriveSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
         try {
             var keyAgreement = KeyAgreement.getInstance("ECDH");
             keyAgreement.init(privateKey);
@@ -181,7 +181,7 @@ public class KeyUtils {
         }
     }
 
-    private byte[] encryptMessage(String message, SecretKey aesKey) {
+    public static byte[] encryptMessage(String message, SecretKey aesKey) {
         try {
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             var iv = new byte[12];
@@ -200,14 +200,14 @@ public class KeyUtils {
         }
     }
 
-    private byte[] combineAndEncode(byte[] iv, byte[] encryptedData) {
+    private static byte[] combineAndEncode(byte[] iv, byte[] encryptedData) {
         var combinedData = new byte[iv.length + encryptedData.length];
         arraycopy(iv, 0, combinedData, 0, iv.length);
         arraycopy(encryptedData, 0, combinedData, iv.length, encryptedData.length);
         return Base64.getEncoder().encode(combinedData);
     }
 
-    private String decryptMessage(String serializedData, SecretKey aesKey) {
+    public String decryptMessage(String serializedData, SecretKey aesKey) {
         var decodedData = Base64.getDecoder().decode(serializedData);
 
         // Extract IV and encrypted data

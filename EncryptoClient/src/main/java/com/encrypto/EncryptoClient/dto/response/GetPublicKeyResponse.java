@@ -7,4 +7,5 @@ import lombok.Setter;
 @Setter
 public class GetPublicKeyResponse {
     private String publicKey;
+    private boolean success;
 }

@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Base64;
 import java.util.Date;
 
 import javax.swing.*;
@@ -128,9 +129,10 @@ public class LoginSignupPanel extends JPanel {
             var keyPair = generateECDHKeyPair();
             var publicKeyString = exportPublicKey(keyPair.getPublic());
             storePrivateKey(keyPair, username, password);
+            var passwordBase64 =
+                    Base64.getEncoder().encodeToString(new String(password).getBytes());
             var registerReq =
-                    new RegisterRequest(
-                            username, new String(password), dateOfBirth, publicKeyString);
+                    new RegisterRequest(username, passwordBase64, dateOfBirth, publicKeyString);
             var registerReqJson = objectMapper.writeValueAsString(registerReq);
             logger.info("Register request: {}", registerReqJson);
 
@@ -158,12 +160,14 @@ public class LoginSignupPanel extends JPanel {
 
     private void authenticate(String username, char[] password) {
         try {
-            var loginReq = new LoginRequest(username, new String(password));
+            var passwordBase64 =
+                    Base64.getEncoder().encodeToString(new String(password).getBytes());
+            var loginReq = new LoginRequest(username, passwordBase64);
             var loginReqJson = objectMapper.writeValueAsString(loginReq);
             logger.info("Login request: {}", loginReqJson);
             logger.info("Loading Diffie-Hellman private key");
             var privateKey = loadPrivateKey(username, password);
-            parent.setPrivateKey(privateKey);
+            EncryptoClient.setPrivateKey(privateKey);
 
             var req =
                     HttpRequest.newBuilder()

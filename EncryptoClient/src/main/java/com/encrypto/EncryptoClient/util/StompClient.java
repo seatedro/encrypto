@@ -1,6 +1,5 @@
 package com.encrypto.EncryptoClient.util;
 
-
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -47,6 +46,9 @@ public class StompClient {
         if (!cookieHeader.isEmpty()) {
             headers.add("Cookie", cookieHeader.toString());
         }
+
+        // Add content type json header
+        headers.add("Content-Type", "application/json");
 
         return headers;
     }

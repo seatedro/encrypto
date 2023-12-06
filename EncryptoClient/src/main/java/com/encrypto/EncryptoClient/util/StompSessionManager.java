@@ -3,6 +3,8 @@ package com.encrypto.EncryptoClient.util;
 import com.encrypto.EncryptoClient.dto.MessageDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +26,8 @@ public class StompSessionManager {
 
     public StompSessionManager(HttpClient httpClient) {
         setStompClient(new StompClient(httpClient));
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
 
     public void connect() {

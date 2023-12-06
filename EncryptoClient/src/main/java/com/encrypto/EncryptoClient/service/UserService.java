@@ -36,6 +36,7 @@ public class UserService {
             if (HttpStatus.valueOf(res.statusCode()).is2xxSuccessful()) {
                 return parseGetPublicKeyResponse(res.body());
             }
+            logger.error("Failed to get public key: {}, {}", res.statusCode(), res.body());
             return null;
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);

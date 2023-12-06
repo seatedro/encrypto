@@ -38,7 +38,7 @@ public class EncryptoClient {
     private JFrame frame;
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
-    @Getter @Setter private PrivateKey privateKey;
+    @Getter @Setter private static PrivateKey privateKey;
     @Getter @Setter private static StompSessionManager socket;
 
     @Getter
@@ -59,6 +59,7 @@ public class EncryptoClient {
                 "alan",
                 new UserWithMessagesDTO(
                         new UserDTO("alan", "..."),
+                        null,
                         new ArrayList<>() {
                             {
                                 add(
