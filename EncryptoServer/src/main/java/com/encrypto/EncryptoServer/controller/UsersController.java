@@ -24,7 +24,7 @@ public class UsersController {
         try {
             logger.info("Getting public key for user: " + username);
             var publicKey = userService.findByUsername(username).getPublicKey();
-            return ResponseEntity.ok().body(new GetPublicKeyResponse(true, publicKey));
+            return ResponseEntity.ok(new GetPublicKeyResponse(true, publicKey));
         } catch (UsernameNotFoundException e) {
             logger.error("Error getting public key for user: " + username, e);
             return ResponseEntity.notFound().build();
