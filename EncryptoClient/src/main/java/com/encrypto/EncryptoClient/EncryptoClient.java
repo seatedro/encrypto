@@ -67,19 +67,19 @@ public class EncryptoClient {
                                                 "rohitp934",
                                                 "alan",
                                                 "Hello, world!",
-                                                Instant.now()));
+                                                Instant.now().toString()));
                                 add(
                                         new MessageDTO(
                                                 "alan",
                                                 "rohitp934",
                                                 "How are you?",
-                                                Instant.now()));
+                                                Instant.now().toString()));
                                 add(
                                         new MessageDTO(
                                                 "alan",
                                                 "rohitp934",
                                                 "I'm doing well btw!",
-                                                Instant.now()));
+                                                Instant.now().toString()));
                             }
                         }));
     }

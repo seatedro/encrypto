@@ -1,7 +1,6 @@
 package com.encrypto.EncryptoClient.util;
 
 import com.encrypto.EncryptoClient.dto.MessageDTO;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -42,18 +41,11 @@ public class StompSessionManager {
         }
     }
 
-    public void sendMessage(String senderId, String receiverId, String content, Instant timestamp)
-            throws IllegalStateException {
+    public void sendMessage(String senderId, String receiverId, String content, Instant timestamp) {
         if (!isConnected || socket == null)
             throw new IllegalStateException("Cannot send message when session is not connected");
-        try {
-            var messageReq = new MessageDTO(senderId, receiverId, content, timestamp);
-            var messageReqJson = objectMapper.writeValueAsString(messageReq);
-            logger.info("Message request: {}", messageReqJson);
-            socket.send("/app/send", messageReqJson);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        var messageReq = new MessageDTO(senderId, receiverId, content, timestamp);
+        socket.send("/app/send", messageReq);
     }
 
     public void subscribe(String destination, StompFrameHandler fn) throws IllegalStateException {

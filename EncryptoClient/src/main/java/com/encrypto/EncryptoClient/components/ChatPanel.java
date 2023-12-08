@@ -13,6 +13,7 @@ import com.encrypto.EncryptoClient.service.ChatService;
 import com.encrypto.EncryptoClient.service.UserService;
 import com.encrypto.EncryptoClient.util.KeyUtils;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Getter;
@@ -30,6 +31,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Type;
 import java.net.http.HttpClient;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +66,6 @@ public class ChatPanel extends JPanel {
         // Add some gap at the top of the panel.
         setBorder(new EmptyBorder(25, 0, 0, 0));
 
-        populateChats(chatService.fetchAllChats(EncryptoClient.getUsername()));
         startListening();
         render();
     }
@@ -72,6 +74,7 @@ public class ChatPanel extends JPanel {
         setupSideBar();
         setupChatDisplayArea();
         setupMessageInputArea();
+        populateChats(chatService.fetchAllChats(EncryptoClient.getUsername()));
     }
 
     private void setupSideBar() {
@@ -89,7 +92,7 @@ public class ChatPanel extends JPanel {
                 });
 
         for (var username : EncryptoClient.getChats().keySet()) {
-            chatListModel.addElement(username);
+            addUserToChatList(username);
         }
 
         var chatScrollPane = new JScrollPane(chatList);
@@ -101,10 +104,14 @@ public class ChatPanel extends JPanel {
         add(sideBarPanel, "dock west, spany 2, width 200::200, growy");
     }
 
+    private void addUserToChatList(String username) {
+        chatListModel.addElement(username);
+    }
+
     private void addNewChat(String username) {
         if (!chatListModel.contains(username)) {
             if (handshake(username)) {
-                chatListModel.addElement(username);
+                addUserToChatList(username);
                 chatList.setSelectedValue(username, true);
                 updateChatDisplayArea(username);
             }
@@ -277,11 +284,11 @@ public class ChatPanel extends JPanel {
     }
 
     private boolean handshake(String username) {
-        var chat = EncryptoClient.getChats().get(username);
+        var chat = getChat(username);
         if (chat == null || chat.getUser() == null || chat.getUser().getPublicKey().isEmpty()) {
             return fetchPublicKey(username);
         }
-        return false;
+        return true;
     }
 
     private boolean fetchPublicKey(String username) {
@@ -291,7 +298,6 @@ public class ChatPanel extends JPanel {
             return false;
         }
         var publicKey = publicKeyResponse.getPublicKey();
-        logger.info("Fetched public key for {}: {}", username, publicKey);
         if (!EncryptoClient.getChats().containsKey(username)) {
             EncryptoClient.getChats()
                     .put(
@@ -315,24 +321,69 @@ public class ChatPanel extends JPanel {
                     @Override
                     public void handleFrame(StompHeaders headers, Object payload) {
                         var message = (MessageDTO) payload;
-                        logger.info("Received message: {}", message);
+                        try {
+                            var messageJson = objectMapper.writeValueAsString(message);
+                            logger.info("Received message: {}", messageJson);
+                        } catch (JsonProcessingException e) {
+                            logger.error("Error parsing message", e);
+                        }
+                        // Decrypt message.
+                        var senderId = message.getSenderId();
+                        var chat = getChat(senderId);
+                        if (chat == null) {
+                            EncryptoClient.getChats()
+                                    .put(
+                                            senderId,
+                                            new UserWithMessagesDTO(
+                                                    new UserDTO(senderId, null),
+                                                    null,
+                                                    new ArrayList<>()));
+                            addUserToChatList(senderId);
+                            logger.error("Chat not found for {}, creating a new chat.", senderId);
+                        }
+                        chat = getChat(senderId);
+                        fetchPublicKey(senderId);
+                        var user = getUserFromChat(chat);
+                        var publicKey = KeyUtils.importPublicKey(user.getPublicKey());
+                        var privateKey = EncryptoClient.getPrivateKey();
+                        var secretKey = getSecretKey(chat, privateKey, publicKey);
+                        var decryptedMessage =
+                                KeyUtils.decryptMessage(message.getContent(), secretKey);
+                        message.setContent(decryptedMessage);
+                        logger.info("Decrypted message: {}", decryptedMessage);
                         addMessageToUser(message);
                     }
                 });
     }
 
+    private static SecretKey getSecretKey(
+            UserWithMessagesDTO chat, PrivateKey privateKey, PublicKey publicKey) {
+        SecretKey secretKey;
+        if (chat.getSecretKey() != null) {
+            secretKey = chat.getSecretKey();
+        } else {
+            secretKey = KeyUtils.deriveSharedSecret(privateKey, publicKey);
+            chat.setSecretKey(secretKey);
+        }
+        return secretKey;
+    }
+
+    private static UserWithMessagesDTO getChat(String senderId) {
+        return EncryptoClient.getChats().get(senderId);
+    }
+
+    private UserDTO getUserFromChat(UserWithMessagesDTO chat) {
+        return chat.getUser();
+    }
+
     private void addMessageToUser(MessageDTO message) {
         var senderId = message.getSenderId();
-        var receiverId = message.getReceiverId();
         var content = message.getContent();
-        var timestamp = message.getTimestamp();
-        var chat = EncryptoClient.getChats().get(senderId);
-        if (chat == null) {
-            logger.error("Chat not found for {}", senderId);
-            return;
-        }
+        getChat(senderId);
+        UserWithMessagesDTO chat;
+        chat = EncryptoClient.getChats().get(senderId);
         var messages = chat.getMessages();
-        messages.add(new MessageDTO(senderId, receiverId, content, timestamp));
+        messages.add(message);
         if (chatList.getSelectedValue().equals(senderId)) {
             addMessageToChat(content, true);
         }
@@ -341,17 +392,10 @@ public class ChatPanel extends JPanel {
     private void sendMessage(String message) {
         try {
             var selectedUser = chatList.getSelectedValue();
-            var chat = EncryptoClient.getChats().get(selectedUser);
-            var user = chat.getUser();
+            var chat = getChat(selectedUser);
+            var user = getUserFromChat(chat);
             var publicKey = KeyUtils.importPublicKey(user.getPublicKey());
-            var privateKey = EncryptoClient.getPrivateKey();
-            SecretKey secretKey;
-            if (chat.getSecretKey() != null) {
-                secretKey = chat.getSecretKey();
-            } else {
-                secretKey = KeyUtils.deriveSharedSecret(privateKey, publicKey);
-                chat.setSecretKey(secretKey);
-            }
+            var secretKey = getSecretKey(chat, EncryptoClient.getPrivateKey(), publicKey);
             var encryptedMessage = KeyUtils.encryptMessage(message, secretKey);
             var encryptedMessageString = Base64.getEncoder().encodeToString(encryptedMessage);
             logger.info("Sending message to {}: {}", selectedUser, message);
@@ -361,6 +405,7 @@ public class ChatPanel extends JPanel {
                     selectedUser,
                     encryptedMessageString,
                     Instant.now());
+            addMessageToChat(message, false);
         } catch (Exception e) {
             logger.error("Error sending message", e);
         }

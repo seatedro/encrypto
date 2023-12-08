@@ -8,6 +8,8 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,6 +32,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
 public class KeyUtils {
+    private static final Logger logger = LoggerFactory.getLogger(KeyUtils.class);
     private static final String KEYSTORE_SUBDIR = ".config/Encrypto";
     private static final String KEYSTORE_FILENAME = "user_keystore.p12";
 
@@ -204,10 +207,10 @@ public class KeyUtils {
         var combinedData = new byte[iv.length + encryptedData.length];
         arraycopy(iv, 0, combinedData, 0, iv.length);
         arraycopy(encryptedData, 0, combinedData, iv.length, encryptedData.length);
-        return Base64.getEncoder().encode(combinedData);
+        return combinedData;
     }
 
-    public String decryptMessage(String serializedData, SecretKey aesKey) {
+    public static String decryptMessage(String serializedData, SecretKey aesKey) {
         var decodedData = Base64.getDecoder().decode(serializedData);
 
         // Extract IV and encrypted data
@@ -229,6 +232,7 @@ public class KeyUtils {
                 | InvalidAlgorithmParameterException
                 | IllegalBlockSizeException
                 | BadPaddingException e) {
+            logger.error("Error decrypting message", e);
             throw new RuntimeException(e);
         }
     }
