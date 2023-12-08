@@ -101,8 +101,8 @@ public class EncryptoClient {
         // Login/Signup
         loginSignupPanel = new LoginSignupPanel(this);
         frame.add(loginSignupPanel, "push, grow");
-        //                chatPanel = new ChatPanel();
-        //                frame.add(chatPanel, "push, grow");
+        //                        chatPanel = new ChatPanel();
+        //                        frame.add(chatPanel, "push, grow");
 
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);

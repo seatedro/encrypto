@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoClient.components;
 
 import static java.lang.String.format;
+import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.MessageDTO;
@@ -27,6 +28,8 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Type;
@@ -44,6 +47,7 @@ import javax.swing.border.EmptyBorder;
 
 public class ChatPanel extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(ChatPanel.class);
+    private static int nextMessageRow = 10000;
     private JList<String> chatList;
     private JPanel chatDisplayArea;
     private PlaceHolderTextArea messageInputField;
@@ -56,6 +60,8 @@ public class ChatPanel extends JPanel {
     private final UserService userService;
     @Getter @Setter private StompSessionManager socket;
     private static JPanel chatDisplayComponent;
+    private static JScrollPane chatScrollPane;
+//    Border redBorder = BorderFactory.createLineBorder(Color.RED, 1);
 
     public ChatPanel(StompSessionManager socket, HttpClient client) {
         setSocket(socket);
@@ -122,7 +128,8 @@ public class ChatPanel extends JPanel {
         chatSelected();
         chatDisplayArea.removeAll();
         if (username != null) {
-            chatDisplayArea.add(createChatDisplayComponentForUser(username), "grow, push");
+            createChatDisplayComponentForUser(username);
+            chatDisplayArea.add(chatScrollPane, "grow, push");
             logger.info("Chat display area updated for user: {}", username);
         } else {
             chatDisplayArea.add(
@@ -207,10 +214,17 @@ public class ChatPanel extends JPanel {
         }
     }
 
-    private JScrollPane createChatDisplayComponentForUser(String username) {
+    private void createChatDisplayComponentForUser(String username) {
         // Create a panel to hold the chat messages
-        chatDisplayComponent = new JPanel(new MigLayout("fillx, insets 0, wrap 1"));
+        chatDisplayComponent =
+                new JPanel(new MigLayout("fillx, insets 0, wrap 1", "grow", "push[]"));
         chatDisplayComponent.setBorder(new EmptyBorder(0, 10, 10, 10));
+        chatDisplayComponent.addComponentListener(
+                new ComponentAdapter() {
+                    public void componentResized(ComponentEvent e) {
+                        scrollToBottom();
+                    }
+                });
 
         var messages = EncryptoClient.getChats().get(username).getMessages();
         // Add a sample label, or you can add the actual chat messages here
@@ -222,18 +236,28 @@ public class ChatPanel extends JPanel {
         }
         // Add more UI components to chatDisplayComponent as needed for the chat UI
 
-        return new JScrollPane(chatDisplayComponent);
+        chatScrollPane = new JScrollPane(chatDisplayComponent);
+        chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
     }
 
     private static void addMessageToChat(String msg, boolean received) {
-        var bubble = new MessageBubble(msg);
+        var bubble = new MessageBubble(msg, received);
         // Align left for received messages, align right for sent messages
         var alignment = received ? "left" : "right";
 
         chatDisplayComponent.add(
-                bubble, format("wrap, wmin 10, top, gapbottom 10, align %s", alignment));
+                bubble,
+                format("cell 0 %d, wrap, gapbottom 10, align %s", nextMessageRow, alignment));
+        nextMessageRow++;
         chatDisplayComponent.revalidate();
         chatDisplayComponent.repaint();
+        scrollToBottom();
+    }
+
+    private static void scrollToBottom() {
+        var vertical = chatScrollPane.getVerticalScrollBar();
+        vertical.setValue(vertical.getMaximum());
     }
 
     private static class ChatListCellRenderer implements ListCellRenderer<String> {
@@ -351,7 +375,7 @@ public class ChatPanel extends JPanel {
                                 KeyUtils.decryptMessage(message.getContent(), secretKey);
                         message.setContent(decryptedMessage);
                         logger.info("Decrypted message: {}", decryptedMessage);
-                        addMessageToUser(message);
+                        addMessageToUser(message, true);
                     }
                 });
     }
@@ -376,16 +400,19 @@ public class ChatPanel extends JPanel {
         return chat.getUser();
     }
 
-    private void addMessageToUser(MessageDTO message) {
-        var senderId = message.getSenderId();
+    private void addMessageToUser(MessageDTO message, boolean received) {
+        String userId;
+        if (received) {
+            userId = message.getSenderId();
+        } else {
+            userId = message.getReceiverId();
+        }
         var content = message.getContent();
-        getChat(senderId);
-        UserWithMessagesDTO chat;
-        chat = EncryptoClient.getChats().get(senderId);
+        var chat = getChat(userId);
         var messages = chat.getMessages();
         messages.add(message);
-        if (chatList.getSelectedValue().equals(senderId)) {
-            addMessageToChat(content, true);
+        if (chatList.getSelectedValue().equals(userId)) {
+            addMessageToChat(content, received);
         }
     }
 
@@ -405,7 +432,14 @@ public class ChatPanel extends JPanel {
                     selectedUser,
                     encryptedMessageString,
                     Instant.now());
-            addMessageToChat(message, false);
+            addMessageToUser(
+                    new MessageDTO(
+                            EncryptoClient.getUsername(),
+                            selectedUser,
+                            message,
+                            ISO_INSTANT.format(Instant.now())),
+                    false);
+            //            addMessageToChat(message, false);
         } catch (Exception e) {
             logger.error("Error sending message", e);
         }

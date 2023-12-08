@@ -14,10 +14,12 @@ public class MessageBubble extends JPanel {
     private static final int VERTICAL_PADDING = 10; // Vertical padding within the bubble
 
     private JLabel messageLabel;
+    private boolean isReceiver;
 
-    public MessageBubble(String message) {
+    public MessageBubble(String message, boolean isReceiver) {
         setLayout(new MigLayout("insets 5", "[grow, fill]", "[]"));
         setOpaque(false);
+        this.isReceiver = isReceiver;
 
         // Create a label for the message text
         messageLabel =
@@ -49,7 +51,7 @@ public class MessageBubble extends JPanel {
         var height = labelSize.height + 2 * VERTICAL_PADDING;
 
         // Set bubble color
-        g2.setColor(new Color(4, 118, 212));
+        g2.setColor(isReceiver ? new Color(4, 118, 212) : Color.DARK_GRAY);
         // Draw rounded rectangle bubble
         g2.fillRoundRect(0, 0, width, height, ARC_WIDTH, ARC_HEIGHT);
         g2.dispose();
