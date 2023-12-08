@@ -73,7 +73,7 @@ public class KeyUtils {
     public static void storePrivateKey(KeyPair keyPair, String alias, char[] password) {
         try {
             var keyStore = KeyStore.getInstance("PKCS12");
-            var keyStorePath = getKeyStorePath();
+            var keyStorePath = getKeyStorePath(alias);
 
             // Create the subdirectory if it doesn't exist
             var keyStoreDir = keyStorePath.getParent().toFile();
@@ -111,7 +111,7 @@ public class KeyUtils {
     public static PrivateKey loadPrivateKey(String alias, char[] password) {
         try {
             var keyStore = KeyStore.getInstance("PKCS12");
-            var keyStorePath = getKeyStorePath();
+            var keyStorePath = getKeyStorePath(alias);
 
             // Check if the keystore exists
             if (!keyStorePath.toFile().exists()) {
@@ -167,9 +167,9 @@ public class KeyUtils {
                 principal, serialNumber, notBefore, notAfter, principal, keyPair.getPublic());
     }
 
-    private static Path getKeyStorePath() {
+    private static Path getKeyStorePath(String alias) {
         var userHome = System.getProperty("user.home");
-        return Paths.get(userHome, KEYSTORE_SUBDIR, KEYSTORE_FILENAME);
+        return Paths.get(userHome, KEYSTORE_SUBDIR, alias, KEYSTORE_FILENAME);
     }
 
     public static SecretKey deriveSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
