@@ -38,7 +38,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.SecretKey;
@@ -61,7 +60,8 @@ public class ChatPanel extends JPanel {
     @Getter @Setter private StompSessionManager socket;
     private static JPanel chatDisplayComponent;
     private static JScrollPane chatScrollPane;
-//    Border redBorder = BorderFactory.createLineBorder(Color.RED, 1);
+
+    //    Border redBorder = BorderFactory.createLineBorder(Color.RED, 1);
 
     public ChatPanel(StompSessionManager socket, HttpClient client) {
         setSocket(socket);
@@ -252,7 +252,9 @@ public class ChatPanel extends JPanel {
         nextMessageRow++;
         chatDisplayComponent.revalidate();
         chatDisplayComponent.repaint();
-        scrollToBottom();
+        if (chatScrollPane != null) {
+            scrollToBottom();
+        }
     }
 
     private static void scrollToBottom() {
@@ -299,10 +301,16 @@ public class ChatPanel extends JPanel {
     }
 
     public void populateChats(GetAllChatsResponse response) {
-        logger.info("Populating chats: {}", Arrays.toString(response.getUsernames()));
-        for (var username : response.getUsernames()) {
+        logger.info("Populating chats: {}", response.getChats());
+        var usernames = response.getChats().keySet();
+        for (var username : usernames) {
             if (handshake(username)) {
                 addNewChat(username);
+                for (var message : response.getChats().get(username)) {
+                    var received = message.getSenderId().equals(username);
+                    var decryptedMessage = decryptMessage(message, received);
+                    addMessageToUser(message, received);
+                }
             }
         }
     }
@@ -365,15 +373,7 @@ public class ChatPanel extends JPanel {
                             addUserToChatList(senderId);
                             logger.error("Chat not found for {}, creating a new chat.", senderId);
                         }
-                        chat = getChat(senderId);
-                        fetchPublicKey(senderId);
-                        var user = getUserFromChat(chat);
-                        var publicKey = KeyUtils.importPublicKey(user.getPublicKey());
-                        var privateKey = EncryptoClient.getPrivateKey();
-                        var secretKey = getSecretKey(chat, privateKey, publicKey);
-                        var decryptedMessage =
-                                KeyUtils.decryptMessage(message.getContent(), secretKey);
-                        message.setContent(decryptedMessage);
+                        var decryptedMessage = decryptMessage(message, true);
                         logger.info("Decrypted message: {}", decryptedMessage);
                         addMessageToUser(message, true);
                     }
@@ -392,6 +392,19 @@ public class ChatPanel extends JPanel {
         return secretKey;
     }
 
+    private String decryptMessage(MessageDTO message, boolean received) {
+        var userId = getUserId(message, received);
+        var chat = getChat(userId);
+        fetchPublicKey(userId);
+        var user = getUserFromChat(chat);
+        var publicKey = KeyUtils.importPublicKey(user.getPublicKey());
+        var privateKey = EncryptoClient.getPrivateKey();
+        var secretKey = getSecretKey(chat, privateKey, publicKey);
+        var decryptedMessage = KeyUtils.decryptMessage(message.getContent(), secretKey);
+        message.setContent(decryptedMessage);
+        return decryptedMessage;
+    }
+
     private static UserWithMessagesDTO getChat(String senderId) {
         return EncryptoClient.getChats().get(senderId);
     }
@@ -401,12 +414,7 @@ public class ChatPanel extends JPanel {
     }
 
     private void addMessageToUser(MessageDTO message, boolean received) {
-        String userId;
-        if (received) {
-            userId = message.getSenderId();
-        } else {
-            userId = message.getReceiverId();
-        }
+        var userId = getUserId(message, received);
         var content = message.getContent();
         var chat = getChat(userId);
         var messages = chat.getMessages();
@@ -414,6 +422,16 @@ public class ChatPanel extends JPanel {
         if (chatList.getSelectedValue().equals(userId)) {
             addMessageToChat(content, received);
         }
+    }
+
+    private static String getUserId(MessageDTO message, boolean received) {
+        String userId;
+        if (received) {
+            userId = message.getSenderId();
+        } else {
+            userId = message.getReceiverId();
+        }
+        return userId;
     }
 
     private void sendMessage(String message) {
