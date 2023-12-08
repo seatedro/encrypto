@@ -15,6 +15,7 @@ import org.springframework.messaging.simp.stomp.StompSession;
 
 import java.net.http.HttpClient;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 public class StompSessionManager {
     private static final Logger logger = LoggerFactory.getLogger(StompSessionManager.class);
@@ -44,7 +45,8 @@ public class StompSessionManager {
     public void sendMessage(String senderId, String receiverId, String content, Instant timestamp) {
         if (!isConnected || socket == null)
             throw new IllegalStateException("Cannot send message when session is not connected");
-        var messageReq = new MessageDTO(senderId, receiverId, content, timestamp);
+        var timeStampStr = DateTimeFormatter.ISO_INSTANT.format(timestamp);
+        var messageReq = new MessageDTO(senderId, receiverId, content, timeStampStr);
         socket.send("/app/send", messageReq);
     }
 
