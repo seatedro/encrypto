@@ -1,5 +1,8 @@
 package com.encrypto.EncryptoServer.dto.response;
 
-import java.util.Set;
+import com.encrypto.EncryptoServer.dto.MessageDTO;
 
-public record GetAllChatsResponse(Set<String> usernames) {}
+import java.util.List;
+import java.util.Map;
+
+public record GetAllChatsResponse(Map<String, List<MessageDTO>> chats) {}

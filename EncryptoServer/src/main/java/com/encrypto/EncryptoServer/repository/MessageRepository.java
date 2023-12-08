@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface MessageRepository extends JpaRepository<Messages, Long> {
     List<Messages> findBySenderAndReceiver(Users sender, Users receiver);
 
-    @Query("SELECT m FROM Messages m WHERE m.sender = :user OR m.receiver = :user")
+    @Query(
+            "SELECT m FROM Messages m WHERE m.sender = :user OR m.receiver = :user ORDER BY m.timestamp ASC")
     Optional<List<Messages>> findAllBySenderOrReceiverId(@Param("user") Users user);
 }

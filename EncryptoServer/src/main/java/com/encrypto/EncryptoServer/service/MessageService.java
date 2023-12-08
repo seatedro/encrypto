@@ -25,18 +25,32 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public Set<String> getAllChats(String username) {
+    public Map<String, List<MessageDTO>> getAllChats(String username) {
         var sender = userService.findByUsername(username);
         var messages =
                 messageRepository.findAllBySenderOrReceiverId(sender).orElse(new ArrayList<>());
-        var users = new HashSet<String>();
+        var users = new HashMap<String, List<MessageDTO>>();
         for (var message : messages) {
+            String user;
             if (Objects.equals(message.getSender().getId(), sender.getId())) {
-                users.add(message.getReceiver().getUsername());
+                user = message.getReceiver().getUsername();
             } else {
-                users.add(message.getSender().getUsername());
+                user = message.getSender().getUsername();
             }
+            var chat = users.getOrDefault(user, new ArrayList<>());
+            var messageDTO = createMessageDTO(message);
+            chat.add(messageDTO);
+            users.put(user, chat);
         }
         return users;
+    }
+
+    private MessageDTO createMessageDTO(Messages message) {
+        var messageDTO = new MessageDTO();
+        messageDTO.setSenderId(message.getSender().getUsername());
+        messageDTO.setReceiverId(message.getReceiver().getUsername());
+        messageDTO.setContent(message.getContent());
+        messageDTO.setTimestamp(message.getTimestamp());
+        return messageDTO;
     }
 }
