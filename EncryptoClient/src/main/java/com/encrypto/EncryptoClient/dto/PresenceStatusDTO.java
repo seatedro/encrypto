@@ -2,18 +2,14 @@ package com.encrypto.EncryptoClient.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
-
-import javax.crypto.SecretKey;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
-public class UserWithMessagesDTO {
-    private UserDTO user;
-    private SecretKey secretKey;
+public class PresenceStatusDTO {
+    private String userId;
     private boolean isOnline;
-    private List<MessageDTO> messages;
 }

@@ -28,10 +28,7 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.lang.reflect.Type;
 import java.net.http.HttpClient;
 import java.security.PrivateKey;
@@ -63,8 +60,11 @@ public class ChatPanel extends JPanel {
 
     //    Border redBorder = BorderFactory.createLineBorder(Color.RED, 1);
 
-    public ChatPanel(StompSessionManager socket, HttpClient client) {
+    @Setter EncryptoClient encryptoClient;
+
+    public ChatPanel(EncryptoClient frame, StompSessionManager socket, HttpClient client) {
         setSocket(socket);
+        setEncryptoClient(frame);
         chatService = new ChatService(client);
         userService = new UserService(client);
         setLayout(new MigLayout("fill, insets 0", "[grow][grow]", "[grow][shrink 0]"));
@@ -81,6 +81,24 @@ public class ChatPanel extends JPanel {
         setupChatDisplayArea();
         setupMessageInputArea();
         populateChats(chatService.fetchAllChats(EncryptoClient.getUsername()));
+        onFocusChange();
+    }
+
+    private void onFocusChange() {
+        encryptoClient
+                .getFrame()
+                .addWindowFocusListener(
+                        new WindowFocusListener() {
+                            @Override
+                            public void windowGainedFocus(WindowEvent e) {
+                                socket.sendPresenceStatus(EncryptoClient.getUsername(), true);
+                            }
+
+                            @Override
+                            public void windowLostFocus(WindowEvent e) {
+                                socket.sendPresenceStatus(EncryptoClient.getUsername(), false);
+                            }
+                        });
     }
 
     private void setupSideBar() {
@@ -335,13 +353,14 @@ public class ChatPanel extends JPanel {
                     .put(
                             username,
                             new UserWithMessagesDTO(
-                                    new UserDTO(username, ""), null, new ArrayList<>()));
+                                    new UserDTO(username, ""), null, false, new ArrayList<>()));
         }
         EncryptoClient.getChats().get(username).getUser().setPublicKey(publicKey);
         return true;
     }
 
     private void startListening() {
+        logger.info("User {} listening for messages", EncryptoClient.getUsername());
         socket.subscribe(
                 format("/user/%s/private", EncryptoClient.getUsername()),
                 new StompFrameHandler() {
@@ -369,6 +388,7 @@ public class ChatPanel extends JPanel {
                                             new UserWithMessagesDTO(
                                                     new UserDTO(senderId, null),
                                                     null,
+                                                    true,
                                                     new ArrayList<>()));
                             addUserToChatList(senderId);
                             logger.error("Chat not found for {}, creating a new chat.", senderId);
@@ -376,6 +396,25 @@ public class ChatPanel extends JPanel {
                         var decryptedMessage = decryptMessage(message, true);
                         logger.info("Decrypted message: {}", decryptedMessage);
                         addMessageToUser(message, true);
+                    }
+                });
+        socket.subscribe(
+                "/topic/presence",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return String.class;
+                    }
+
+                    @Override
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        var username = (String) payload;
+                        logger.info("Received presence update for {}", username);
+                        var chat = getChat(username);
+                        if (chat == null) return;
+                        var isOnline = headers.get("isOnline").getFirst().equals("true");
+                        chat.setOnline(isOnline);
+                        chatList.repaint();
                     }
                 });
     }

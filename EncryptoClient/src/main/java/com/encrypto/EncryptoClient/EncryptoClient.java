@@ -35,7 +35,7 @@ import javax.swing.*;
 
 public class EncryptoClient {
     private static final Logger logger = getLogger(EncryptoClient.class);
-    private JFrame frame;
+    @Getter private JFrame frame;
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
     @Getter @Setter private static PrivateKey privateKey;
@@ -60,6 +60,7 @@ public class EncryptoClient {
                 new UserWithMessagesDTO(
                         new UserDTO("alan", "..."),
                         null,
+                        true,
                         new ArrayList<>() {
                             {
                                 add(
@@ -110,7 +111,7 @@ public class EncryptoClient {
 
     public void transitionToChatPanel() {
         if (chatPanel == null) {
-            chatPanel = new ChatPanel(getSocket(), client);
+            chatPanel = new ChatPanel(this, getSocket(), client);
         }
 
         frame.remove(loginSignupPanel);

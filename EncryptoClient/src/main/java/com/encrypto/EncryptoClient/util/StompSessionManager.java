@@ -1,6 +1,7 @@
 package com.encrypto.EncryptoClient.util;
 
 import com.encrypto.EncryptoClient.dto.MessageDTO;
+import com.encrypto.EncryptoClient.dto.PresenceStatusDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -48,6 +49,14 @@ public class StompSessionManager {
         var timeStampStr = DateTimeFormatter.ISO_INSTANT.format(timestamp);
         var messageReq = new MessageDTO(senderId, receiverId, content, timeStampStr);
         socket.send("/app/send", messageReq);
+    }
+
+    public void sendPresenceStatus(String senderId, boolean isOnline) {
+        if (!isConnected || socket == null)
+            throw new IllegalStateException(
+                    "Cannot send presence status when session is not connected");
+        var presenceStatusReq = new PresenceStatusDTO(senderId, isOnline);
+        socket.send("/app/presence", presenceStatusReq);
     }
 
     public void subscribe(String destination, StompFrameHandler fn) throws IllegalStateException {
