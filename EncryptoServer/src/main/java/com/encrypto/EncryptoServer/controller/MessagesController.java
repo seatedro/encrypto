@@ -17,11 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class MessagesController {
 
     private static final Logger logger = LoggerFactory.getLogger(UsersController.class);
-    @Autowired
-    private MessageService messageService;
+    @Autowired private MessageService messageService;
+
     @GetMapping("/{username}/all")
     public ResponseEntity<?> getAllChats(@PathVariable String username) {
-        logger.info("Getting all chats for user: " + username);
         var chats = messageService.getAllChats(username);
         return ResponseEntity.ok().body(new GetAllChatsResponse(chats));
     }

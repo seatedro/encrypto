@@ -130,7 +130,7 @@ public class ChatPanel extends JPanel {
         if (username != null) {
             createChatDisplayComponentForUser(username);
             chatDisplayArea.add(chatScrollPane, "grow, push");
-            logger.info("Chat display area updated for user: {}", username);
+            logger.debug("Chat display area updated for user: {}", username);
         } else {
             chatDisplayArea.add(
                     new JLabel("Select a chat to start messaging", SwingConstants.CENTER),
@@ -301,7 +301,7 @@ public class ChatPanel extends JPanel {
     }
 
     public void populateChats(GetAllChatsResponse response) {
-        logger.info("Populating chats: {}", response.getChats());
+        logger.debug("Populating chats: {}", response.getChats());
         var usernames = response.getChats().keySet();
         for (var username : usernames) {
             if (handshake(username)) {
@@ -355,7 +355,7 @@ public class ChatPanel extends JPanel {
                         var message = (MessageDTO) payload;
                         try {
                             var messageJson = objectMapper.writeValueAsString(message);
-                            logger.info("Received message: {}", messageJson);
+                            logger.debug("Received message: {}", messageJson);
                         } catch (JsonProcessingException e) {
                             logger.error("Error parsing message", e);
                         }
@@ -374,7 +374,7 @@ public class ChatPanel extends JPanel {
                             logger.error("Chat not found for {}, creating a new chat.", senderId);
                         }
                         var decryptedMessage = decryptMessage(message, true);
-                        logger.info("Decrypted message: {}", decryptedMessage);
+                        logger.debug("Decrypted message: {}", decryptedMessage);
                         addMessageToUser(message, true);
                     }
                 });
@@ -443,7 +443,7 @@ public class ChatPanel extends JPanel {
             var secretKey = getSecretKey(chat, EncryptoClient.getPrivateKey(), publicKey);
             var encryptedMessage = KeyUtils.encryptMessage(message, secretKey);
             var encryptedMessageString = Base64.getEncoder().encodeToString(encryptedMessage);
-            logger.info("Sending message to {}: {}", selectedUser, message);
+            logger.debug("Sending message to {}: {}", selectedUser, message);
             var socket = getSocket();
             socket.sendMessage(
                     EncryptoClient.getUsername(),

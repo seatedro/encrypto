@@ -22,7 +22,6 @@ public class UsersController {
     @GetMapping("/{username}/public_key")
     public ResponseEntity<?> getPublicKey(@PathVariable String username) {
         try {
-            logger.info("Getting public key for user: " + username);
             var publicKey = userService.findByUsername(username).getPublicKey();
             return ResponseEntity.ok(new GetPublicKeyResponse(true, publicKey));
         } catch (UsernameNotFoundException e) {

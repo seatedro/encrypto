@@ -27,7 +27,7 @@ public class ChatService {
         try {
             var getAllMessagesRequest = new GetAllChatsRequest(username);
             var reqJson = objectMapper.writeValueAsString(getAllMessagesRequest);
-            logger.info("Get all messages request: {}", reqJson);
+            logger.debug("Get all messages request: {}", reqJson);
             var uri = String.format("http://localhost:8080/api/messages/%s/all", username);
             var req =
                     HttpRequest.newBuilder()

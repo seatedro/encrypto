@@ -112,20 +112,20 @@ public class LoginSignupPanel extends JPanel {
     private void login(ActionEvent e) {
         var username = usernameField.getText();
         var password = passwordField.getPassword();
-        logger.info("Login attempt with username: {}", username);
+        logger.debug("Login attempt with username: {}", username);
         authenticate(username, password);
     }
 
     private void signup(ActionEvent e) {
         var username = usernameField.getText();
         var password = passwordField.getPassword();
-        logger.info("Register attempt with username: {}", username);
+        logger.debug("Register attempt with username: {}", username);
         signUp(username, password, new Date());
     }
 
     private void signUp(String username, char[] password, Date dateOfBirth) {
         try {
-            logger.info("Creating and saving Diffie-Hellman key pair");
+            logger.debug("Creating and saving Diffie-Hellman key pair");
             var keyPair = generateECDHKeyPair();
             var publicKeyString = exportPublicKey(keyPair.getPublic());
             storePrivateKey(keyPair, username, password);
@@ -134,7 +134,7 @@ public class LoginSignupPanel extends JPanel {
             var registerReq =
                     new RegisterRequest(username, passwordBase64, dateOfBirth, publicKeyString);
             var registerReqJson = objectMapper.writeValueAsString(registerReq);
-            logger.info("Register request: {}", registerReqJson);
+            logger.debug("Register request: {}", registerReqJson);
 
             var req =
                     HttpRequest.newBuilder()
@@ -164,8 +164,8 @@ public class LoginSignupPanel extends JPanel {
                     Base64.getEncoder().encodeToString(new String(password).getBytes());
             var loginReq = new LoginRequest(username, passwordBase64);
             var loginReqJson = objectMapper.writeValueAsString(loginReq);
-            logger.info("Login request: {}", loginReqJson);
-            logger.info("Loading Diffie-Hellman private key");
+            logger.debug("Login request: {}", loginReqJson);
+            logger.debug("Loading Diffie-Hellman private key");
             var privateKey = loadPrivateKey(username, password);
             EncryptoClient.setPrivateKey(privateKey);
 
@@ -180,8 +180,8 @@ public class LoginSignupPanel extends JPanel {
             client.sendAsync(req, BodyHandlers.ofString())
                     .thenApply(
                             res -> {
-                                logger.info("Login response: {}", res.body());
-                                logger.info(
+                                logger.debug("Login response: {}", res.body());
+                                logger.debug(
                                         "Login Cookie: {}", res.headers().map().get("Set-Cookie"));
                                 return res;
                             })

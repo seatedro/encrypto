@@ -7,8 +7,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
-import com.encrypto.EncryptoClient.dto.MessageDTO;
-import com.encrypto.EncryptoClient.dto.UserDTO;
 import com.encrypto.EncryptoClient.dto.UserWithMessagesDTO;
 import com.encrypto.EncryptoClient.util.StompSessionManager;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
@@ -27,8 +25,6 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.http.HttpClient;
 import java.security.PrivateKey;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.*;
@@ -53,36 +49,7 @@ public class EncryptoClient {
                     .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL))
                     .build();
 
-    public EncryptoClient() {
-        // Add sample data and messages to chats
-        chats.put(
-                "alan",
-                new UserWithMessagesDTO(
-                        new UserDTO("alan", "..."),
-                        null,
-                        new ArrayList<>() {
-                            {
-                                add(
-                                        new MessageDTO(
-                                                "rohitp934",
-                                                "alan",
-                                                "Hello, world!",
-                                                Instant.now().toString()));
-                                add(
-                                        new MessageDTO(
-                                                "alan",
-                                                "rohitp934",
-                                                "How are you?",
-                                                Instant.now().toString()));
-                                add(
-                                        new MessageDTO(
-                                                "alan",
-                                                "rohitp934",
-                                                "I'm doing well btw!",
-                                                Instant.now().toString()));
-                            }
-                        }));
-    }
+    public EncryptoClient() {}
 
     private void render() {
         FlatMacDarkLaf.setup();
@@ -101,8 +68,6 @@ public class EncryptoClient {
         // Login/Signup
         loginSignupPanel = new LoginSignupPanel(this);
         frame.add(loginSignupPanel, "push, grow");
-        //                        chatPanel = new ChatPanel();
-        //                        frame.add(chatPanel, "push, grow");
 
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
@@ -130,7 +95,7 @@ public class EncryptoClient {
 
     public static void main(String[] args) {
         BasicConfigurator.configure();
-        logger.info("Starting Encrypto Client");
+        logger.debug("Starting Encrypto Client");
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("apple.awt.application.appearance", "system");
         SwingUtilities.invokeLater(() -> new EncryptoClient().render());
