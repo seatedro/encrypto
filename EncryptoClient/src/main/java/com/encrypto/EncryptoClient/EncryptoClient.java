@@ -62,7 +62,7 @@ public class EncryptoClient {
         PROTOCOL =
                 System.getenv("API_URL") != null
                         ? format("wss://%s", System.getenv("API_URL"))
-                        : "ws://locahost:8080";
+                        : "ws://localhost:8080";
         logger.debug("API_URL: {}", API_URL);
     }
 
