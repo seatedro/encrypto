@@ -5,6 +5,8 @@ package com.encrypto.EncryptoClient;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+import static java.lang.String.format;
+
 import com.encrypto.EncryptoClient.components.ChatPanel;
 import com.encrypto.EncryptoClient.components.LoginSignupPanel;
 import com.encrypto.EncryptoClient.dto.UserWithMessagesDTO;
@@ -31,6 +33,9 @@ import javax.swing.*;
 
 public class EncryptoClient {
     private static final Logger logger = getLogger(EncryptoClient.class);
+
+    @Getter public static String API_URL;
+    @Getter private static String PROTOCOL;
     private JFrame frame;
     private LoginSignupPanel loginSignupPanel;
     private ChatPanel chatPanel;
@@ -49,7 +54,17 @@ public class EncryptoClient {
                     .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL))
                     .build();
 
-    public EncryptoClient() {}
+    public EncryptoClient() {
+        API_URL =
+                System.getenv("API_URL") != null
+                        ? format("https://%s", System.getenv("API_URL"))
+                        : "http://localhost:8080";
+        PROTOCOL =
+                System.getenv("API_URL") != null
+                        ? format("wss://%s", System.getenv("API_URL"))
+                        : "ws://locahost:8080";
+        logger.debug("API_URL: {}", API_URL);
+    }
 
     private void render() {
         FlatMacDarkLaf.setup();

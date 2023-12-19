@@ -1,5 +1,9 @@
 package com.encrypto.EncryptoClient.util;
 
+import static java.lang.String.format;
+
+import com.encrypto.EncryptoClient.EncryptoClient;
+
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -14,7 +18,7 @@ import java.util.concurrent.ExecutionException;
 
 public class StompClient {
     private WebSocketStompClient stompClient;
-    private final String url = "ws://localhost:8080/encrypto";
+    private final String url = format("%s/encrypto", EncryptoClient.getPROTOCOL());
     private final HttpClient httpClient;
 
     public StompClient(HttpClient httpClient) {

@@ -1,5 +1,6 @@
 package com.encrypto.EncryptoClient.service;
 
+import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.request.GetAllChatsRequest;
 import com.encrypto.EncryptoClient.dto.response.GetAllChatsResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,7 +29,8 @@ public class ChatService {
             var getAllMessagesRequest = new GetAllChatsRequest(username);
             var reqJson = objectMapper.writeValueAsString(getAllMessagesRequest);
             logger.debug("Get all messages request: {}", reqJson);
-            var uri = String.format("http://localhost:8080/api/messages/%s/all", username);
+            var uri =
+                    String.format("%s/api/messages/%s/all", EncryptoClient.getAPI_URL(), username);
             var req =
                     HttpRequest.newBuilder()
                             .uri(URI.create(uri))

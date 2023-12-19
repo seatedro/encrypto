@@ -1,5 +1,8 @@
 package com.encrypto.EncryptoClient.service;
 
+// import static com.encrypto.EncryptoClient.EncryptoClient.getAPI_URL;
+
+import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.response.GetPublicKeyResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +28,9 @@ public class UserService {
 
     public GetPublicKeyResponse getPublicKey(String username) {
         try {
-            var uri = String.format("http://localhost:8080/api/users/%s/public_key", username);
+            var uri =
+                    String.format(
+                            "%s/api/users/%s/public_key", EncryptoClient.getAPI_URL(), username);
             var req =
                     HttpRequest.newBuilder()
                             .uri(URI.create(uri))

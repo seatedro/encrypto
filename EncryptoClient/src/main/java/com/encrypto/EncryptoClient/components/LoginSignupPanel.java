@@ -3,6 +3,8 @@ package com.encrypto.EncryptoClient.components;
 import static com.encrypto.EncryptoClient.EncryptoClient.client;
 import static com.encrypto.EncryptoClient.util.KeyUtils.*;
 
+import static java.lang.String.format;
+
 import com.encrypto.EncryptoClient.EncryptoClient;
 import com.encrypto.EncryptoClient.dto.request.LoginRequest;
 import com.encrypto.EncryptoClient.dto.request.RegisterRequest;
@@ -138,7 +140,11 @@ public class LoginSignupPanel extends JPanel {
 
             var req =
                     HttpRequest.newBuilder()
-                            .uri(URI.create("http://localhost:8080/api/auth/register"))
+                            .uri(
+                                    URI.create(
+                                            format(
+                                                    "%s/api/auth/register",
+                                                    EncryptoClient.getAPI_URL())))
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(registerReqJson))
                             .build();
@@ -171,7 +177,11 @@ public class LoginSignupPanel extends JPanel {
 
             var req =
                     HttpRequest.newBuilder()
-                            .uri(URI.create("http://localhost:8080/api/auth/login"))
+                            .uri(
+                                    URI.create(
+                                            format(
+                                                    "%s/api/auth/login",
+                                                    EncryptoClient.getAPI_URL())))
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(loginReqJson))
                             .build();

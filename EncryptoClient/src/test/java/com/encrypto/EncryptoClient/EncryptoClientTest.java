@@ -6,9 +6,4 @@ package com.encrypto.EncryptoClient;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class EncryptoClientTest {
-    @Test void appHasAGreeting() {
-        EncryptoClient classUnderTest = new EncryptoClient();
-        assertNotNull(classUnderTest.getGreeting(), "app should have a greeting");
-    }
-}
+class EncryptoClientTest {}
