@@ -36,3 +36,6 @@ SELECT * FROM messages WHERE senderid = $1 AND receiverid = $2 ORDER BY timestam
 
 -- name: GetUserByUsername :one
 SELECT * FROM users WHERE username = $1;
+
+-- name: GetUserById :one
+SELECT * FROM users WHERE id = $1;

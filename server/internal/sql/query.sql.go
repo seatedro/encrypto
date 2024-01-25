@@ -31,8 +31,8 @@ INSERT INTO messages (
 
 type CreateMessageParams struct {
 	ID         uuid.UUID
-	Senderid   string
-	Receiverid string
+	Senderid   uuid.UUID
+	Receiverid uuid.UUID
 	Message    string
 	Timestamp  pgtype.Timestamp
 }
@@ -103,7 +103,7 @@ const getAllChatsForUser = `-- name: GetAllChatsForUser :many
 SELECT id, senderid, receiverid, message, timestamp FROM messages WHERE senderid = $1 OR receiverid = $1 ORDER BY timestamp ASC
 `
 
-func (q *Queries) GetAllChatsForUser(ctx context.Context, senderid string) ([]Message, error) {
+func (q *Queries) GetAllChatsForUser(ctx context.Context, senderid uuid.UUID) ([]Message, error) {
 	rows, err := q.db.Query(ctx, getAllChatsForUser, senderid)
 	if err != nil {
 		return nil, err
@@ -134,8 +134,8 @@ SELECT id, senderid, receiverid, message, timestamp FROM messages WHERE senderid
 `
 
 type GetMessageBySenderAndReceiverParams struct {
-	Senderid   string
-	Receiverid string
+	Senderid   uuid.UUID
+	Receiverid uuid.UUID
 }
 
 func (q *Queries) GetMessageBySenderAndReceiver(ctx context.Context, arg GetMessageBySenderAndReceiverParams) ([]Message, error) {
@@ -162,6 +162,23 @@ func (q *Queries) GetMessageBySenderAndReceiver(ctx context.Context, arg GetMess
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserById = `-- name: GetUserById :one
+SELECT id, username, password, dateofbirth, publickey FROM users WHERE id = $1
+`
+
+func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.Dateofbirth,
+		&i.Publickey,
+	)
+	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one

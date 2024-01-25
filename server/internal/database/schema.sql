@@ -11,8 +11,8 @@ CREATE TABLE users (
 -- Messages
 CREATE TABLE messages (
   id UUID PRIMARY KEY,
-  senderid VARCHAR(255) NOT NULL,
-  receiverid VARCHAR(255) NOT NULL,
+  senderid UUID NOT NULL,
+  receiverid UUID NOT NULL,
   message VARCHAR(5000) NOT NULL,
   timestamp TIMESTAMP NOT NULL,
   FOREIGN KEY (senderid) REFERENCES users(id),

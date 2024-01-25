@@ -13,8 +13,8 @@ import (
 
 type Message struct {
 	ID         uuid.UUID
-	Senderid   string
-	Receiverid string
+	Senderid   uuid.UUID
+	Receiverid uuid.UUID
 	Message    string
 	Timestamp  pgtype.Timestamp
 }
