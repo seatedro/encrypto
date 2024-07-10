@@ -6,15 +6,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/rohitp934/encrypto-server/internal/sql"
-	"github.com/rohitp934/guam/auth"
+	"github.com/seatedro/encrypto-server/internal/sql"
+	"github.com/seatedro/guam/auth"
 )
 
 func (s *FiberServer) RegisterFiberRoutes() {
 	s.Get("/", s.healthHandler)
+	s.Get("/encrypto", websocket.New(Setup))
 	s.Post("/api/auth/")
 }
 

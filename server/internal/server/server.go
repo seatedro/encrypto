@@ -7,10 +7,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
-	"github.com/rohitp934/encrypto-server/internal/database"
-	"github.com/rohitp934/guam-adapters/postgresql"
-	"github.com/rohitp934/guam/auth"
-	"github.com/rohitp934/guam/middleware"
+	"github.com/seatedro/encrypto-server/internal/database"
+	"github.com/seatedro/guam-adapters/postgresql"
+	"github.com/seatedro/guam/auth"
+	"github.com/seatedro/guam/middleware"
 )
 
 var a *auth.Auth

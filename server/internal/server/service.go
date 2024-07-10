@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 
-	"github.com/rohitp934/encrypto-server/internal/database"
-	"github.com/rohitp934/encrypto-server/internal/sql"
+	"github.com/seatedro/encrypto-server/internal/database"
+	"github.com/seatedro/encrypto-server/internal/sql"
 )
 
 func GetAllChats(db *database.Service, username string) (map[string][]sql.Message, error) {

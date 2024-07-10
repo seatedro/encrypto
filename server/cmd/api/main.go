@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/rohitp934/encrypto-server/internal/server"
+	"github.com/seatedro/encrypto-server/internal/server"
 )
 
 func main() {

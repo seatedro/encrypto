@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
-	sqlc "github.com/rohitp934/encrypto-server/internal/sql"
+	sqlc "github.com/seatedro/encrypto-server/internal/sql"
 )
 
 type Service struct {
